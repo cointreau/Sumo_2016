@@ -130,21 +130,6 @@ public class MainController {
 				//ArrayList<String> tlToGreen = new ArrayList<String>();
 				List<String> rushEdges = (List<String>) conn.do_job_get(Route.getEdges("rush1"));
 				SumoStringList strList = new SumoStringList(rushEdges);
-				/*for (int j=0; j<strList.size()-1; j++){
-					tlToGreen.add(strList.get(j)+"@"+strList.get(j+1));
-				}
-				for (String tl: tlToGreen){
-					//해당 tl이 들어있는 노드를 찾음.
-					for (Entry<String, CS> e:csList.entrySet()){
-						if (e.getKey().compareTo("01")==0 || e.getKey().compareTo("04")==0 || e.getKey().compareTo("31")==0 || e.getKey().compareTo("34")==0)
-							continue;
-						
-						if (e.getValue().gettlightMap().containsKey(tl)){
-							e.getValue().updateTrafficLight(conn, tl, "g");
-						}
-						conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
-					}
-				}*/
 				
 				for (String tl: strList){
 					//해당 tl이 들어있는 노드를 찾음.
