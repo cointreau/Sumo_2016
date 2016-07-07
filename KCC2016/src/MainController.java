@@ -18,15 +18,15 @@ import it.polito.appeal.traci.SumoTraciConnection;
 public class MainController {
 	
 	static String trafficLightSignal[] = {"y", "r", "g"};
-	static int changeToSoS = 230;
+	static int changeToSoS = 3;
 	
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 
 		String sumo_bin = "D:/Coursework/Thesis/sumo-win32-0.25.0/sumo-0.25.0/bin/sumo-gui.exe";
 		String config = "D:/Coursework/Thesis/sumo-win32-0.25.0/sumo-0.25.0/KCCPROJECT/sim.cfg";
-		String relEdgesFileDir = "C:/Users/WonKyung/workspace/KCC2016/relatedEdges.txt";
-		String trafDirectionFileDir = "C:/Users/WonKyung/workspace/KCC2016/trafficDirection.txt";
+		String relEdgesFileDir = "C:/Users/WonKyung/git/KCC2016/relatedEdges.txt";
+		String trafDirectionFileDir = "C:/Users/WonKyung/git/KCC2016/trafficDirection.txt";
 		BufferedReader br = new BufferedReader(new FileReader(new File(relEdgesFileDir)));
 		
 		int arrivedCar =0;
@@ -118,37 +118,29 @@ public class MainController {
 			//SoS 상황시 대응
 			if (flagSoS == 0){
 				//모든 신호등을 r로 바꾼 뒤, 
-//				System.out.println("SOS!!!!");
-				for (Entry<String, CS> e: csList.entrySet()){
-					if (e.getKey().compareTo("01")==0 || e.getKey().compareTo("04")==0 || e.getKey().compareTo("31")==0 || e.getKey().compareTo("34")==0)
-						continue;
-					e.getValue().updateAllTrafficLightToRed(conn);
-					conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
-				}
-				
-				//해당 길목(rush1)에 해당하는 신호등들의 신호만 g로 바꿈.
-				//ArrayList<String> tlToGreen = new ArrayList<String>();
+				System.out.println("SOS!!!!");
 				List<String> rushEdges = (List<String>) conn.do_job_get(Route.getEdges("rush1"));
 				SumoStringList strList = new SumoStringList(rushEdges);
 				
-				for (String tl: strList){
-					//해당 tl이 들어있는 노드를 찾음.
-					for (Entry<String, CS> e: csList.entrySet()){
-						if (e.getKey().compareTo("01")==0 || e.getKey().compareTo("04")==0 || e.getKey().compareTo("31")==0 || e.getKey().compareTo("34")==0)
-							continue;
+				for (Entry<String, CS> e: csList.entrySet()){
+					if (e.getKey().compareTo("01")==0 || e.getKey().compareTo("04")==0 || e.getKey().compareTo("31")==0 || e.getKey().compareTo("34")==0)
+						continue;
+					
+					//해당 길목(rush1)에 해당하는 신호등들의 신호만 g로 바꿈.
+					if (e.getKey().compareTo("02")==0 || e.getKey().compareTo("12")==0 || e.getKey().compareTo("13")==0 || e.getKey().compareTo("23")==0 || e.getKey().compareTo("33")==0){
+						e.getValue().updateAllTrafficLightToRed(conn);
 						
-						for (String key: e.getValue().gettlightMap().keySet()){
-							if (key.startsWith(tl)){		//만약 이 edge 명으로 시작하면,
-								e.getValue().updateTrafficLight(conn, key, "g");		//해당 edge에서 빠져나가는 노드는 모두 g로 바꾸어줌.
+						for (String tl: strList){
+							for (String key: e.getValue().gettlightMap().keySet()){
+								if (key.startsWith(tl)){		//만약 이 edge 명으로 시작하면,
+									e.getValue().updateTrafficLight(conn, key, "g");		//해당 edge에서 빠져나가는 노드는 모두 g로 바꾸어줌.
+								}
 							}
+							conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
 						}
-						conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
 					}
 				}
 				
-				//해당 길목이 아닌 전혀 상관없는 구간이라면 랜덤으로 가게 해줌. (일단 차선 과제...) 
-				//그러나 지금 상황대로 유지해도, 어차피 모두 23에서 막히게 되어있음(거기서 만나서...)
-					
 				flagSoS = i;
 				//만약 상황이 종료되었으면 flag를 다시 0으로 바꿔줌
 			}
