@@ -1,11 +1,22 @@
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 import de.tudresden.sumo.cmd.Route;
 import de.tudresden.sumo.cmd.Simulation;
@@ -19,6 +30,7 @@ public class MainController {
 	
 	static String trafficLightSignal[] = {"y", "r", "g"};
 	static int changeToSoS = 3;
+	static int trafficLightUpdateCycle = 0;
 	
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
@@ -28,6 +40,8 @@ public class MainController {
 		String relEdgesFileDir = "C:/Users/WonKyung/git/KCC2016/relatedEdges.txt";
 		String trafDirectionFileDir = "C:/Users/WonKyung/git/KCC2016/trafficDirection.txt";
 		BufferedReader br = new BufferedReader(new FileReader(new File(relEdgesFileDir)));
+		String policyDir = "policy1.xml";
+		parsingPolicy(policyDir);
 		
 		int arrivedCar =0;
 		//initiation of CS-monitoring camera
@@ -94,7 +108,7 @@ public class MainController {
 				 conn.do_job_set(Vehicle.add("genr"+i, "car", "genr3", simtime, 0, 13.8, (byte) 0));
 			
 			//traffic light 주기적 업데이트
-			if (i%10 ==0 && flagSoS==-1){		//10초마다
+			if (i%trafficLightUpdateCycle ==0 && flagSoS==-1){		//10초마다
 				for (Entry<String, CS> e: csList.entrySet()){
 					if (e.getKey().compareTo("01")==0 || e.getKey().compareTo("04")==0 || e.getKey().compareTo("31")==0 || e.getKey().compareTo("34")==0)
 						continue;
@@ -180,6 +194,28 @@ public class MainController {
 		conn.close();
 
 		
+		
+	}
+
+	private static void parsingPolicy(String policyDir) {
+		// TODO Auto-generated method stub
+		try {
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			Document doc = db.parse(new File(policyDir));
+			
+			//normal_policy가 가지고 있는 non-traffic jam 일 때의 신호등 update cycle을 가장 먼저 초기화함.
+			NodeList nList = doc.getElementsByTagName("normal_policy");
+			Element el = (Element) nList.item(0);
+			trafficLightUpdateCycle = Integer.parseInt(el.getAttribute("updateCycle"));
+			
+			nList = doc.getElementsByTagName("policy");
+			el = (Element) nList.item(0);
+			Policy exPolicy = new Policy(el);
+		} catch (ParserConfigurationException | SAXException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 
