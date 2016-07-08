@@ -210,8 +210,13 @@ public class MainController {
 			trafficLightUpdateCycle = Integer.parseInt(el.getAttribute("updateCycle"));
 			
 			nList = doc.getElementsByTagName("policy");
-			Element n = (Element)nList.item(0);
-			Policy exPolicy = new Policy(n);
+			ArrayList<Policy> policyList = new ArrayList<Policy>();
+			for (int i=0; i<nList.getLength(); i++){
+				Element n = (Element)nList.item(i);
+				Policy tmpPol = new Policy(n);
+				policyList.add(tmpPol);
+			}			
+		
 		} catch (ParserConfigurationException | SAXException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

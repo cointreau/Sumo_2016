@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<policySet>
+	<!-- when we do not encounter traffic jam, which means for the normal state-->
+	<normal_policy updateCycle="10"/>	<!-- just update the traffic lights every 10 ticks-->			
+
+	<!-- when there are too many cars on the specific roads -->
+	<policy id="1" priority="3">
+		<factor>		<!-- external factors -->
+			<location target="edges">A2S B2E B3S C3S</location>		<!-- on these edges,-->
+			<vehicle target="all">			<!-- just for all vehicle on these edges, -->
+				<number>230</number>			<!-- if the number of vehicles is over 230, on these edges, -->
+			</vehicle>
+		</factor>
+
+		<operation>		<!-- order this operation to the traffic lights. -->
+			<location target="edges">A2S B2E B3S C3S</location>			<!-- traffic lights on these edges-->
+			<time>15</time>
+			<light>g</light>
+		</operation>
+	</policy>
+
+
+	<!-- if a vehicle which should be go to its destination earlier like ambulance appears, let it go faster -->
+	<policy id="2" priority="1">
+		<factor>		<!-- external factors -->
+			<location target="all"/>		<!-- on all edges,-->
+			<vehicle target="ambulance">			<!-- just for ambulance on all edges, -->
+				<number>1</number>			<!-- if the ambulance vehicle appears on all edges, -->
+			</vehicle>
+		</factor>
+
+		<operation>		<!-- order this operation to the traffic lights. -->
+			<location target="follow"/>
+			<time>15</time>
+			<light>grr</light>
+		</operation>
+	</policy>
+
+
+	<!-- if a vehicle which we should interfere to go, let it go slower -->
+	<policy id="3" priority="2">
+		<factor>		<!-- external factors -->
+			<location target="all"/>		<!-- on all edges,-->
+			<vehicle target="detect">			<!-- just for vehicles to be detected on all edges, -->
+				<number>1</number>			<!-- if the ambulance vehicle appears on all edges -->
+			</vehicle>
+		</factor>
+
+		<operation>		<!-- order this operation to the traffic lights. -->
+			<location target="follow"/>
+			<time>15</time>
+			<light>r</light>
+		</operation>
+	</policy>
+</policySet>

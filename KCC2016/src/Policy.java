@@ -7,6 +7,7 @@ public class Policy {
 	String id;
 	int priority;
 	Factor f;
+	Operation o;
 	
 	public Policy(Element pol) {
 		// TODO Auto-generated constructor stub
@@ -16,7 +17,8 @@ public class Policy {
 		NodeList nl = pol.getElementsByTagName("factor");
 		f = new Factor((Element)nl.item(0));
 		
-		System.out.println(f.getVehicle_number());
+		nl = pol.getElementsByTagName("operation");
+		o = new Operation((Element)nl.item(0));
 	}
 
 	
@@ -27,7 +29,6 @@ public class Policy {
 		int vehicle_number;
 		
 		public Factor(Element elem) {
-			
 			//location 노드 파싱
 			NodeList list = elem.getElementsByTagName("location");
 			String target = ((Element)list.item(0)).getAttribute("target");
@@ -61,6 +62,62 @@ public class Policy {
 		}
 	}
 	
+	class Operation {
+		String location_target;
+		String location_edges;
+		int sustainingtime;
+		String light;
+		
+		public Operation(Element elem) {
+			//location 노드 파싱
+			NodeList list = elem.getElementsByTagName("location");
+			String target = ((Element)list.item(0)).getAttribute("target");
+			//location type 이 edges일 경우의 처리
+			if (target.compareTo("edges")==0){
+				location_target = target;
+				location_edges = ((Element)list.item(0)).getTextContent();
+			}//follow일 경우의 처리
+			else if (target.compareTo("follow")==0){
+				location_target = target;
+				location_edges = "";
+			}
+			
+			//time 노드 파싱
+			list = elem.getElementsByTagName("time");
+			sustainingtime = Integer.parseInt(((Element)list.item(0)).getTextContent());
+			
+			//light 노드 파싱
+			list = elem.getElementsByTagName("light");
+			light = ((Element)list.item(0)).getTextContent();
+		}
+		
+		public String getLocation_target(){
+			return location_target;
+		}
+		public String getLocation_edges(){
+			return location_edges;
+		}
+		public int getSustainTime(){
+			return sustainingtime;
+		}
+		public String getLight(){
+			return light;
+		}
+	}
 	
+	public String getId(){
+		return id;
+	}
 	
+	public int getPriority(){
+		return priority;
+	}
+	
+	public Factor getFactor(){
+		return f;
+	}
+	
+	public Operation getOperation(){
+		return o;
+	}
 }
