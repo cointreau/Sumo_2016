@@ -24,6 +24,17 @@ public class CS {
 		tlight = "";
 	}
 	
+	public Boolean hasEdge(String e){
+		Boolean ret = false;
+		for (String s: edgeList){
+			if (s.compareTo(e)==0){
+				ret = true;
+				break;
+			}
+		}
+		return ret;
+	}
+	
 	public void addEdge(String e){
 		edgeList.add(e);
 	}
