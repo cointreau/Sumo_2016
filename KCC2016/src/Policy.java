@@ -1,3 +1,6 @@
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -24,7 +27,8 @@ public class Policy {
 	
 	class Factor {
 		String location_target;
-		String location_edges;
+		String location_edges;		//string 형태로 쭉 들어있음
+		ArrayList<String> edges = new ArrayList<String>();		//string 형태의 location edges를 파싱하여 하나씩 가지고 있음.
 		String vehicle_target;
 		int vehicle_number;
 		
@@ -36,7 +40,14 @@ public class Policy {
 			if (target.compareTo("edges")==0){
 				location_target = target;
 				location_edges = ((Element)list.item(0)).getTextContent();
-			}//all일 경우의 처리
+				
+				//토큰으로 잘라서 edges에 하나씩 저장
+				StringTokenizer st = new StringTokenizer(location_edges);
+				while (st.hasMoreTokens())
+					edges.add(st.nextToken());
+			}
+			
+			//all일 경우의 처리
 			else if (target.compareTo("all")==0){
 				location_target = target;
 				location_edges = "";
