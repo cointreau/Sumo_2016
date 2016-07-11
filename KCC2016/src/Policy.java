@@ -71,6 +71,10 @@ public class Policy {
 		public int getVehicle_number(){
 			return vehicle_number;
 		}
+		
+		public ArrayList<String> getEdges(){
+			return edges;
+		}
 	}
 	
 	class Operation {

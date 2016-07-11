@@ -6,7 +6,7 @@
 	<!-- when there are too many cars on the specific roads -->
 	<policy id="1" priority="3">
 		<factor>		<!-- external factors -->
-			<location target="edges">A2S B2E B3S C3S</location>		<!-- on these edges,-->
+			<location target="edges">A1E A2S B2E B3S C3S D3E</location>		<!-- on these edges,-->
 			<vehicle target="all">			<!-- just for all vehicle on these edges, -->
 				<number>230</number>			<!-- if the number of vehicles is over 230, on these edges, -->
 			</vehicle>
@@ -32,7 +32,7 @@
 		<operation>		<!-- order this operation to the traffic lights. -->
 			<location target="follow"/>
 			<time>15</time>
-			<light>grr</light>
+			<light>g</light>
 		</operation>
 	</policy>
 
