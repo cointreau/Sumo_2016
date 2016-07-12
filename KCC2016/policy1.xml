@@ -31,7 +31,7 @@
 
 		<operation>		<!-- order this operation to the traffic lights. -->
 			<location target="follow"/>
-			<time>15</time>
+			<time>5</time>
 			<light>g</light>
 		</operation>
 	</policy>
@@ -48,7 +48,7 @@
 
 		<operation>		<!-- order this operation to the traffic lights. -->
 			<location target="follow"/>
-			<time>15</time>
+			<time>5</time>
 			<light>r</light>
 		</operation>
 	</policy>
