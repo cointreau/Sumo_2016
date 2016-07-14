@@ -42,7 +42,7 @@ public class MainController {
 		String trafDirectionFileDir = "C:/Users/WonKyung/git/KCC2016/trafficDirection.txt";
 		BufferedReader br = new BufferedReader(new FileReader(new File(relEdgesFileDir)));
 		String policyDir = "policy1.xml";
-		
+
 		int arrivedCar =0;
 		//#### initiation of CS-monitoring camera
 		String line = "";
@@ -71,10 +71,10 @@ public class MainController {
 			}
 			cs.initTLight();
 		}
-		
+
 		// ####### policy initiation ######
 		ArrayList<Policy> policyList = parsingPolicy(policyDir);
-		
+
 		//policy1에 해당하는 edges를 넣는다. 본 list는 policy factor의 location이 edges인 것에 대하여 하나씩 있어야 한다. 
 		// 일단 한개만 있으니까 그대로 하고 추가시 코드 수정 필요..  
 		List<String> monitoringEdges = new ArrayList<String>();
@@ -98,7 +98,7 @@ public class MainController {
 
 		// #### assign traffic light initially
 		for (Entry<String, CS> e: csList.entrySet()){
-			if (e.getKey().compareTo("01")==0 || e.getKey().compareTo("04")==0 || e.getKey().compareTo("31")==0 || e.getKey().compareTo("34")==0)
+			if (getPassingNodes().contains(e.getKey()))
 				continue;
 
 			conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
@@ -133,7 +133,7 @@ public class MainController {
 			//traffic light 주기적 업데이트. normal state.
 			if (i%trafficLightUpdateCycle ==0 && SoSstate==0){		//정해진 traffic light update cycle마다
 				for (Entry<String, CS> e: csList.entrySet()){
-					if (e.getKey().compareTo("01")==0 || e.getKey().compareTo("04")==0 || e.getKey().compareTo("31")==0 || e.getKey().compareTo("34")==0)
+					if (getPassingNodes().contains(e.getKey()))
 						continue;
 					e.getValue().updateAllTrafficLight(conn, trafficLightSignal);
 					conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
@@ -150,7 +150,7 @@ public class MainController {
 					}
 				}
 			}
-			
+
 			//ambulance가 나타났는지 체크함(policy2의 대비를 하기 위해)
 			List<String> vehicles = (List<String>) conn.do_job_get(Vehicle.getIDList());
 			if (SoSstate != 2 && SoSstate != -2){
@@ -161,37 +161,38 @@ public class MainController {
 					}
 				}
 			}
-			
+
 			// 만약 ambulance가 도로상에 나타났을 경우, 처리를 위해 현재 시간을 flag로 못박고 SoS state를 policy2로 업데이트 함.
 			if (SoSstate == -2){
 				flagedTime = i;
 				SoSstate = 2;
 			}
-			
-/*			List<String> tmproutes = (List<String>) conn.do_job_get(Route.getEdges("rush1"));
+
+			/*			List<String> tmproutes = (List<String>) conn.do_job_get(Route.getEdges("rush1"));
 			ArrayList<String> passingNodes = getNodesFromRoutes(tmproutes);*/
 			//List<String> monitoringEdges = (List<String>) conn.do_job_get(Route.getEdges("rush1"));	
-					/*csList.get("12").getCamera().get("A2S") + csList.get("12").getCamera().get("B2E") +
+			/*csList.get("12").getCamera().get("A2S") + csList.get("12").getCamera().get("B2E") +
 					csList.get("23").getCamera().get("B3S") + csList.get("23").getCamera().get("C3S");*/
-			
-			
+
+
+
 			//policy2의 적용 -- 기존에 policy1의 발동보다 상위의 priority.
 			if (SoSstate == 2){
 				System.out.println("Ambulance appears!!");
 				//기존의 신호등을 원래대로 돌린 뒤
 				for (Entry<String, CS> e: csList.entrySet()){
-					if (e.getKey().compareTo("01")==0 || e.getKey().compareTo("04")==0 || e.getKey().compareTo("31")==0 || e.getKey().compareTo("34")==0)
+					if (getPassingNodes().contains(e.getKey()))
 						continue;
-					
+
 					if (i%trafficLightUpdateCycle == 0)
 						e.getValue().updateAllTrafficLight(conn, trafficLightSignal);		//기존의 SoSstate==1이었으면 red로 일부 바뀐 신호등이 있기 때문에 이렇게 해주어야함
-					
-/*					if (getNodesFromRoutes((List<String>)conn.do_job_get(Vehicle.getRoute(ambulanceId))).contains(e.getKey())){
+
+					/*					if (getNodesFromRoutes((List<String>)conn.do_job_get(Vehicle.getRoute(ambulanceId))).contains(e.getKey())){
 						System.out.println(e.getKey());
 					}*/
 					//policy2의 새로운 신호 체계를 적용해야 함. 일단 그 주변 신호는 모두 빨간색으로 업데이트 한뒤
-//					if (e.getKey().compareTo("12")==0 || e.getKey().compareTo("13")==0 || e.getKey().compareTo("23")==0)
-					if (getNodesFromRoutes((List<String>)conn.do_job_get(Vehicle.getRoute(ambulanceId))).contains(e.getKey()))
+					//					if (e.getKey().compareTo("12")==0 || e.getKey().compareTo("13")==0 || e.getKey().compareTo("23")==0)
+					if (getNodesFromRoutes((List<String>)conn.do_job_get(Route.getEdges("ambul1"))).contains(e.getKey()))
 						e.getValue().updateAllTrafficLightToRed(conn);
 					for (String tl: ambulanceRoute){
 						for (String key: e.getValue().gettlightMap().keySet()){
@@ -203,8 +204,8 @@ public class MainController {
 					}
 				}
 			}
-		
-			
+
+
 			//policy1의 적용. 우선순위가 가장 낮으므로 어떠한 상황도 아닌 normal 상황에서만 발동하게 된다
 			if (nCar >= changeToSoS && SoSstate==0){		//SoS 상황 설정 -- 해당 차로에 100대가 넘는 차량이 몰려있을 경우를 SoS 상황으로 설정함.
 				SoSstate = -1;
@@ -220,11 +221,11 @@ public class MainController {
 				SumoStringList strList = new SumoStringList(monitoringEdges);
 
 				for (Entry<String, CS> e: csList.entrySet()){
-					if (e.getKey().compareTo("01")==0 || e.getKey().compareTo("04")==0 || e.getKey().compareTo("31")==0 || e.getKey().compareTo("34")==0)
+					if (getPassingNodes().contains(e.getKey()))
 						continue;
 
 					//해당 길목(rush1)에 해당하는 신호등들의 신호만 g로 바꿈. 이부분 코드 수정 필요? rush1에 해당하는 노드를 하드 코딩 말고 뭔가 다른 방법으로 알아내어야 함
-//					if (e.getKey().compareTo("02")==0 || e.getKey().compareTo("12")==0 || e.getKey().compareTo("13")==0 || e.getKey().compareTo("23")==0 || e.getKey().compareTo("33")==0){
+					//					if (e.getKey().compareTo("02")==0 || e.getKey().compareTo("12")==0 || e.getKey().compareTo("13")==0 || e.getKey().compareTo("23")==0 || e.getKey().compareTo("33")==0){
 					if (getNodesFromRoutes((List<String>)conn.do_job_get(Route.getEdges("rush1"))).contains(e.getKey())){
 						e.getValue().updateAllTrafficLightToRed(conn);
 
@@ -246,14 +247,14 @@ public class MainController {
 			int policyKeepingTime=0;
 			if (SoSstate > 0)
 				policyKeepingTime = policyList.get(SoSstate-1).getOperation().getSustainTime();
-			
+
 			if ((flagedTime +policyKeepingTime < i && SoSstate == 1) || (flagedTime+policyKeepingTime < i && SoSstate == 2)){
 				SoSstate = 0;
 				flagedTime = 0;
 				ambulanceId = "";
 				//tlight 정상화
 				for (Entry<String, CS> e: csList.entrySet()){
-					if (e.getKey().compareTo("01")==0 || e.getKey().compareTo("04")==0 || e.getKey().compareTo("31")==0 || e.getKey().compareTo("34")==0)
+					if (getPassingNodes().contains(e.getKey()))
 						continue;
 					e.getValue().updateAllTrafficLight(conn, trafficLightSignal);
 					conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
@@ -304,7 +305,7 @@ public class MainController {
 		}
 		return policyList;
 	}
-	
+
 	private static ArrayList<String> getNodesFromRoutes(List<String> routes){
 		String edgeDir = "C:/Users/WonKyung/git/KCC2016/edg.xml";
 		ArrayList<String> nodes = new ArrayList<String>();
@@ -325,12 +326,38 @@ public class MainController {
 			}
 			if (nodes.size()>1)
 				nodes.remove(nodes.size()-1);
-			
+
 		} catch (ParserConfigurationException | SAXException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
+		return nodes;
+	}
+
+	private static ArrayList<String> getPassingNodes(){
+		String nodeDir = "C:/Users/WonKyung/git/KCC2016/nod.xml";
+		ArrayList<String> nodes = new ArrayList<String>();
+
+		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		DocumentBuilder db;
+		try {
+			db = dbf.newDocumentBuilder();
+			Document doc = db.parse(new File(nodeDir));
+			//일단 노드를 뽑아내서 hashmap에 넣어둠. 
+			NodeList nList = doc.getElementsByTagName("node");
+
+			for (int i=0; i<nList.getLength(); i++){
+				Element n = (Element)nList.item(i);
+				if(n.getAttribute("type").compareTo("traffic_light")!=0)
+					nodes.add(n.getAttribute("id"));
+			}
+
+		} catch (ParserConfigurationException | SAXException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		return nodes;
 	}
 
