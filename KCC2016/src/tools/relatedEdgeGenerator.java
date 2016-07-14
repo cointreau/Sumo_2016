@@ -21,9 +21,9 @@ public class relatedEdgeGenerator {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		String nodeDir = "C:/Users/WonKyung/git/KCC2016/nod.xml";
-		String edgeDir = "C:/Users/WonKyung/git/KCC2016/edg.xml";
-		String relatedEdgesDir = "C:/Users/WonKyung/git/KCC2016/test.txt";
+		String nodeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.nod.xml";
+		String edgeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.edg.xml";
+		String relatedEdgesDir = "C:/Users/WonKyung/git/KCC2016/DJproject/relatedEdges.txt";
 
 		LinkedHashMap<String, ArrayList<String>> relEdges = new LinkedHashMap<String, ArrayList<String>>();
 
@@ -65,6 +65,8 @@ public class relatedEdgeGenerator {
 				fw.newLine();
 			}
 			fw.close();
+			
+			System.out.println("Success.");
 
 		} catch (SAXException e) {
 			// TODO Auto-generated catch block

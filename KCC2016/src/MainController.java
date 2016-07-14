@@ -36,12 +36,12 @@ public class MainController {
 	static int trafficLightUpdateCycle = 0;
 
 	public static void main(String[] args) throws Exception {
-		String sumo_bin = "D:/Coursework/Thesis/sumo-win32-0.25.0/sumo-0.25.0/bin/sumo-gui.exe";
-		String config = "D:/Coursework/Thesis/sumo-win32-0.25.0/sumo-0.25.0/KCCPROJECT/sim.cfg";
-		String relEdgesFileDir = "C:/Users/WonKyung/git/KCC2016/relatedEdges.txt";
-		String trafDirectionFileDir = "C:/Users/WonKyung/git/KCC2016/trafficDirection.txt";
+		String sumo_bin = "C:/Users/WonKyung/git/KCC2016/sumo-0.25.0/bin/sumo-gui.exe";
+		String config = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.sim.cfg";
+		String relEdgesFileDir = "C:/Users/WonKyung/git/KCC2016/DJproject/relatedEdges.txt";
+		String trafDirectionFileDir = "C:/Users/WonKyung/git/KCC2016/DJproject/trafficDirection.txt";
 		BufferedReader br = new BufferedReader(new FileReader(new File(relEdgesFileDir)));
-		String policyDir = "policy1.xml";
+		String policyDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.policy.xml";
 
 		int arrivedCar =0;
 		//#### initiation of CS-monitoring camera
@@ -71,6 +71,10 @@ public class MainController {
 			}
 			cs.initTLight();
 		}
+		
+		for (TLight t: csList.get("DH1").gettlightMap())
+			System.out.println(t.getKey() + "\t " + t.getValue());
+		//System.out.println(csList.get("DH1").getTLight());
 
 		// ####### policy initiation ######
 		ArrayList<Policy> policyList = parsingPolicy(policyDir);
@@ -195,9 +199,10 @@ public class MainController {
 					if (getNodesFromRoutes((List<String>)conn.do_job_get(Route.getEdges("ambul1"))).contains(e.getKey()))
 						e.getValue().updateAllTrafficLightToRed(conn);
 					for (String tl: ambulanceRoute){
-						for (String key: e.getValue().gettlightMap().keySet()){
-							if (key.startsWith(tl)){		//만약 이 edge 명으로 시작하면,
-								e.getValue().updateTrafficLight(conn, key, policyList.get(1).getOperation().getLight());		//해당 edge에서 빠져나가는 노드는 모두 g로 바꾸어줌.
+//						for (String key: e.getValue().gettlightMap().keySet()){
+						for (TLight t: e.getValue().gettlightMap()){
+							if (t.getKey().startsWith(tl)){		//만약 이 edge 명으로 시작하면,
+								e.getValue().updateTrafficLight(conn, t.getKey(), policyList.get(1).getOperation().getLight());		//해당 edge에서 빠져나가는 노드는 모두 g로 바꾸어줌.
 							}
 						}
 						conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
@@ -230,9 +235,10 @@ public class MainController {
 						e.getValue().updateAllTrafficLightToRed(conn);
 
 						for (String tl: strList){
-							for (String key: e.getValue().gettlightMap().keySet()){
-								if (key.startsWith(tl)){		//만약 이 edge 명으로 시작하면,
-									e.getValue().updateTrafficLight(conn, key, policyList.get(1).getOperation().getLight());		//해당 edge에서 빠져나가는 노드는 모두 g로 바꾸어줌.
+//							for (String key: e.getValue().gettlightMap().keySet()){
+							for (TLight t: e.getValue().gettlightMap()){
+								if (t.getKey().startsWith(tl)){		//만약 이 edge 명으로 시작하면,
+									e.getValue().updateTrafficLight(conn, t.getKey(), policyList.get(1).getOperation().getLight());		//해당 edge에서 빠져나가는 노드는 모두 g로 바꾸어줌.
 								}
 							}
 							conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
@@ -307,7 +313,7 @@ public class MainController {
 	}
 
 	private static ArrayList<String> getNodesFromRoutes(List<String> routes){
-		String edgeDir = "C:/Users/WonKyung/git/KCC2016/edg.xml";
+		String edgeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.edg.xml";
 		ArrayList<String> nodes = new ArrayList<String>();
 
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -336,7 +342,7 @@ public class MainController {
 	}
 
 	private static ArrayList<String> getPassingNodes(){
-		String nodeDir = "C:/Users/WonKyung/git/KCC2016/nod.xml";
+		String nodeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.nod.xml";
 		ArrayList<String> nodes = new ArrayList<String>();
 
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();

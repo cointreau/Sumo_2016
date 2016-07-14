@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="http://sumo.sf.net/xsd/nodes_file.xsd">
+
+		<node id = "01" x="0.0" y="1500.0" />
+		<node id = "02" x="500.0" y="1500.0" type="traffic_light"/>
+		<node id = "03" x="1000.0" y="1500.0" type="traffic_light"/>
+		<node id = "04" x="1500.0" y="1500.0" />
+
+		<node id = "11" x="0.0" y="1000.0" type="traffic_light"/>
+		<node id = "12" x="500.0" y="1000.0" type="traffic_light"/>
+		<node id = "13" x="1000.0" y="1000.0" type="traffic_light"/>
+		<node id = "14" x="1500.0" y="1000.0" type="traffic_light"/>
+
+		<node id = "21" x="0.0" y="500.0" type="traffic_light"/>
+		<node id = "22" x="500.0" y="500.0" type="traffic_light"/>
+		<node id = "23" x="1000.0" y="500.0" type="traffic_light"/>
+		<node id = "24" x="1500.0" y="500.0" type="traffic_light"/>
+
+		<node id = "31" x="0.0" y="0.0" />
+		<node id = "32" x="500.0" y="0.0" type="traffic_light"/>
+		<node id = "33" x="1000.0" y="00.0" type="traffic_light"/>
+		<node id = "34" x="1500.0" y="0.0" />
+</nodes>
+

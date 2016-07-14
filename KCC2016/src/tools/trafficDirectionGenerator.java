@@ -21,15 +21,15 @@ public class trafficDirectionGenerator {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		String nodeDir = "C:/Users/WonKyung/git/KCC2016/nod.xml";
-		String edgeDir = "C:/Users/WonKyung/git/KCC2016/edg.xml";
-		String connDir = "C:/Users/WonKyung/git/KCC2016/conn.xml";
-		String trfDirectionDir = "C:/Users/WonKyung/git/KCC2016/testTrafficGen.txt";
-		
+		String nodeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.nod.xml";
+		String edgeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.edg.xml";
+		String connDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.con.xml";
+		String trfDirectionDir = "C:/Users/WonKyung/git/KCC2016/DJproject/trafficDirection.txt";
+
 		LinkedHashMap<String, ArrayList<String>> trfDirection = new LinkedHashMap<String, ArrayList<String>>();
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 		DocumentBuilder db;
-		
+
 		try {
 			db = dbf.newDocumentBuilder();
 			Document doc = db.parse(new File(nodeDir));
@@ -41,13 +41,13 @@ public class trafficDirectionGenerator {
 				if(n.getAttribute("type").compareTo("traffic_light")==0)
 					trfDirection.put(n.getAttribute("id"), new ArrayList<String>());
 			}
-			
+
 			doc = db.parse(new File(connDir));
-//			Document edoc = db.parse(new File(edgeDir));
+			//			Document edoc = db.parse(new File(edgeDir));
 			cList = doc.getElementsByTagName("connection");
 			doc = db.parse(new File(edgeDir));
 			NodeList eList = doc.getElementsByTagName("edge");
-			
+
 			for (int i=0; i<cList.getLength(); i++){
 				Element cel = (Element)cList.item(i);
 				String cfrom = cel.getAttribute("from");
@@ -71,14 +71,15 @@ public class trafficDirectionGenerator {
 				if (fromNode.compareTo(toNode)==0){
 					if (!(getPassingNodes(nodeDir).contains(fromNode))){
 						ArrayList<String> tmp = trfDirection.get(fromNode);
-//						System.out.println(fromNode);
 						String con = cfrom+"@"+cto;
-						tmp.add(con);
-						trfDirection.put(fromNode,tmp);
+//						if (!(tmp.contains(con))){
+							tmp.add(con);
+							trfDirection.put(fromNode,tmp);
+//						}
 					}
 				}
 			}
-			
+
 			BufferedWriter fw = new BufferedWriter(new FileWriter(trfDirectionDir, false));
 			for (Entry<String, ArrayList<String>> entry: trfDirection.entrySet()){
 				fw.write(entry.getKey()+"\t");
@@ -87,16 +88,17 @@ public class trafficDirectionGenerator {
 				fw.newLine();
 			}
 			fw.close();
-			
-			
+
+			System.out.println("Success.");
+
 		} catch (ParserConfigurationException | SAXException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	
-	
-	
+
+
+
 	private static ArrayList<String> getPassingNodes(String nodeDir){
 		ArrayList<String> nodes = new ArrayList<String>();
 

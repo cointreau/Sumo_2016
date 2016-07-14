@@ -1,5 +1,6 @@
 import it.polito.appeal.traci.SumoTraciConnection;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -13,14 +14,15 @@ public class CS {
 	String location;		//located node id, same as id
 	ArrayList<String> edgeList;
 	HashMap<String, Integer> camera;
-	LinkedHashMap<String, String> tlightMap;
+	//LinkedHashMap<String, String> tlightMap;
+	ArrayList<TLight> tlightMap;			//중복을 허용하지 않기 때문에 한 엣지에서 두 레인이 모두 같은 방향으로 가게 될 경우 겹쳐버려서 tlight가 저장되지 않는 문제 극복.
 	String tlight;
 	
 	public CS(String l){
 		location = l;
 		edgeList = new ArrayList<String>();		
 		camera = new HashMap<String, Integer>();
-		tlightMap = new LinkedHashMap<String, String>();
+		tlightMap = new ArrayList<TLight>();
 		tlight = "";
 	}
 	
@@ -40,7 +42,8 @@ public class CS {
 	}
 	
 	public void addTLight(String direction, String signal){
-		tlightMap.put(direction, signal);
+		//tlightMap.put(direction, signal);
+		tlightMap.add(new TLight(direction, signal));
 	}
 	
 	public void initCamera(){
@@ -49,8 +52,8 @@ public class CS {
 	}
 	
 	public void initTLight(){
-		for (Entry<String, String> e: tlightMap.entrySet())
-			tlight = tlight + e.getValue();
+		for (TLight t: tlightMap)
+			tlight = tlight + t.getValue();
 	}
 	
 	public ArrayList<String> getEdgeList(){
@@ -65,7 +68,7 @@ public class CS {
 		return camera.get(e);
 	}
 	
-	public LinkedHashMap<String, String> gettlightMap(){
+	public ArrayList<TLight> gettlightMap(){
 		return tlightMap;
 	}
 	
@@ -89,9 +92,10 @@ public class CS {
 	
 	//randomly assign
 	public void updateAllTrafficLight(SumoTraciConnection conn, String[] signal) throws Exception{
-		for (Entry<String, String> e: tlightMap.entrySet()){
+		for (TLight t: tlightMap){
 			int rand = new Random().nextInt(signal.length);
-			tlightMap.put(e.getKey(), signal[rand]);
+//			tlightMap.put(e.getKey(), signal[rand]);
+			t.setTLight(t.getKey(), signal[rand]);
 		}
 		tlight = "";
 		initTLight();
@@ -99,8 +103,10 @@ public class CS {
 	
 	//update traffic lights of this CS to red
 	public void updateAllTrafficLightToRed(SumoTraciConnection conn) throws Exception{
-		for (Entry<String, String> e: tlightMap.entrySet()){
-			tlightMap.put(e.getKey(), "r");
+//		for (Entry<String, String> e: tlightMap.entrySet()){
+		for (TLight t: tlightMap){
+//			tlightMap.put(e.getKey(), "r");
+			t.setTLight(t.getKey(), "r");
 		}
 		tlight = "";
 		initTLight();
@@ -108,10 +114,35 @@ public class CS {
 	
 	//update one traffic light to some string
 	public void updateTrafficLight(SumoTraciConnection conn, String key, String light) throws Exception{
-		for (Entry<String, String> e: tlightMap.entrySet()){
-			tlightMap.put(key, light);
+		for (TLight t: tlightMap){
+			if (t.getKey().compareTo(key)==0)
+				t.setTLight(t.getKey(), light);
 		}
 		tlight = "";
 		initTLight();
+	}
+}
+
+
+class TLight{
+	private String loc;
+	private String light;
+	
+	public TLight(String key, String value){
+		loc = key;
+		light = value;
+	}
+	
+	public String getKey(){
+		return loc;
+	}
+	
+	public String getValue(){
+		return light;
+	}
+	
+	public void setTLight(String key, String value){
+		loc = key;
+		light = value;
 	}
 }

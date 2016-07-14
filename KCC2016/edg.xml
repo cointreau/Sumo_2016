@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edges xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="http://sumo.sf.net/xsd/edges_file.xsd">
+
+		<!-- HORIZONTAL HIGHWAYS, WEST TO EAST OR EAST TO WEST-->
+		<edge id="A1W" from="02" to="01" type="basic"/>
+		<edge id="A2W" from="03" to="02" type="basic"/>
+		<edge id="A3W" from="04" to="03" type="basic"/>
+
+		<edge id="A1E" from="01" to="02" type="basic"/>
+		<edge id="A2E" from="02" to="03" type="basic"/>
+		<edge id="A3E" from="03" to="04" type="basic"/>
+
+
+		<edge id="B1W" from="12" to="11" type="basic"/>
+		<edge id="B2W" from="13" to="12" type="basic"/>
+		<edge id="B3W" from="14" to="13" type="basic"/>
+
+		<edge id="B1E" from="11" to="12" type="basic"/>
+		<edge id="B2E" from="12" to="13" type="basic"/>
+		<edge id="B3E" from="13" to="14" type="basic"/>
+
+
+		<edge id="C1W" from="22" to="21" type="basic"/>
+		<edge id="C2W" from="23" to="22" type="basic"/>
+		<edge id="C3W" from="24" to="23" type="basic"/>
+
+		<edge id="C1E" from="21" to="22" type="basic"/>
+		<edge id="C2E" from="22" to="23" type="basic"/>
+		<edge id="C3E" from="23" to="24" type="basic"/>
+
+
+		<edge id="D1W" from="32" to="31" type="basic"/>
+		<edge id="D2W" from="33" to="32" type="basic"/>
+		<edge id="D3W" from="34" to="33" type="basic"/>
+
+		<edge id="D1E" from="31" to="32" type="basic"/>
+		<edge id="D2E" from="32" to="33" type="basic"/>
+		<edge id="D3E" from="33" to="34" type="basic"/>
+
+
+		<!-- VERTICAL HIGHWAYS, SOUTH TO NORTH OR NORTH TO SOUTH--> 
+		<edge id="A1S" from="01" to="11" type="basic"/>
+		<edge id="A2S" from="02" to="12" type="basic"/>
+		<edge id="A3S" from="03" to="13" type="basic"/>
+		<edge id="A4S" from="04" to="14" type="basic"/>
+
+		<edge id="A1N" from="11" to="01" type="basic"/>
+		<edge id="A2N" from="12" to="02" type="basic"/>
+		<edge id="A3N" from="13" to="03" type="basic"/>
+		<edge id="A4N" from="14" to="04" type="basic"/>
+
+
+		<edge id="B1S" from="11" to="21" type="basic"/>
+		<edge id="B2S" from="12" to="22" type="basic"/>
+		<edge id="B3S" from="13" to="23" type="basic"/>
+		<edge id="B4S" from="14" to="24" type="basic"/>
+
+		<edge id="B1N" from="21" to="11" type="basic"/>
+		<edge id="B2N" from="22" to="12" type="basic"/>
+		<edge id="B3N" from="23" to="13" type="basic"/>
+		<edge id="B4N" from="24" to="14" type="basic"/>
+
+
+		<edge id="C1S" from="21" to="31" type="basic"/>
+		<edge id="C2S" from="22" to="32" type="basic"/>
+		<edge id="C3S" from="23" to="33" type="basic"/>
+		<edge id="C4S" from="24" to="34" type="basic"/>
+
+		<edge id="C1N" from="31" to="21" type="basic"/>
+		<edge id="C2N" from="32" to="22" type="basic"/>
+		<edge id="C3N" from="33" to="23" type="basic"/>
+		<edge id="C4N" from="34" to="24" type="basic"/>
+</edges>
