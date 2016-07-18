@@ -37,13 +37,17 @@ public class MainController {
 
 	public static void main(String[] args) throws Exception {
 		String sumo_bin = "C:/Users/WonKyung/git/KCC2016/sumo-0.25.0/bin/sumo-gui.exe";
-		String config = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.sim.cfg";
+		String config = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_sim.cfg";
 		String relEdgesFileDir = "C:/Users/WonKyung/git/KCC2016/DJproject/relatedEdges.txt";
 		String trafDirectionFileDir = "C:/Users/WonKyung/git/KCC2016/DJproject/trafficDirection.txt";
 		BufferedReader br = new BufferedReader(new FileReader(new File(relEdgesFileDir)));
-		String policyDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.policy.xml";
+		String policyDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_policy_v1.0.xml";
 
 		int arrivedCar =0;
+		SumoTraciConnection conn = new SumoTraciConnection(sumo_bin, config);
+		conn.addOption("step-length", "1");
+		conn.runServer();
+		
 		//#### initiation of CS-monitoring camera
 		String line = "";
 		HashMap<String, CS> csList = new HashMap<String, CS>();
@@ -58,23 +62,21 @@ public class MainController {
 			csList.put(cs.getLocation(), cs);
 		}
 
-		//#### initiation of CS-traffic light
-		br = new BufferedReader(new FileReader(new File(trafDirectionFileDir)));
-		while((line = br.readLine())!=null){
-			String[] split = line.split("\\t");
-			CS cs = csList.get(split[0]);
-
-			//randomly assign the traffic light
-			for (int i=1; i<split.length; i++){
+		//#### initiation of CS-traffic light -- traffic light에 의해 control되는 link들을 "순서대로" tlight에 집어넣음
+		//순서가 지켜지지 않을 시 tlight가 꼬여서 control하는데 문제가 생김.
+		for (Entry<String, CS> cs: csList.entrySet()){
+			if (getPassingNodes().contains(cs.getKey()))
+				continue;
+			//randomly assign the links of traffic lights
+			SumoLinkList sll = (SumoLinkList)conn.do_job_get(Trafficlights.getControlledLinks(cs.getKey()));
+			for (SumoLink link: sll){
+				String linkname = link.from.substring(0, link.from.length()-2) +"@" + link.to.substring(0, link.to.length()-2);
 				int rand = new Random().nextInt(3);
-				cs.addTLight(split[i], trafficLightSignal[rand]);
+				cs.getValue().addTLight(linkname, trafficLightSignal[rand]);
 			}
-			cs.initTLight();
+			cs.getValue().initTLight();
 		}
 		
-		for (TLight t: csList.get("DH1").gettlightMap())
-			System.out.println(t.getKey() + "\t " + t.getValue());
-		//System.out.println(csList.get("DH1").getTLight());
 
 		// ####### policy initiation ######
 		ArrayList<Policy> policyList = parsingPolicy(policyDir);
@@ -94,9 +96,6 @@ public class MainController {
 			}
 		}
 
-		SumoTraciConnection conn = new SumoTraciConnection(sumo_bin, config);
-		conn.addOption("step-length", "1");
-		conn.runServer();
 
 		conn.do_job_set(Vehicle.add("init", "car", "rush1", 0, 0, 13.8, (byte) 0));
 
@@ -122,15 +121,15 @@ public class MainController {
 			//차 랜덤생성(확률)
 			int randNum = (int)(Math.random() * 500);
 			if (randNum < 350)
-				conn.do_job_set(Vehicle.add("rush1"+i, "car", "rush1", simtime, 0, 13.8, (byte) 0));
+				conn.do_job_set(Vehicle.add("rush1"+i, "car", "rush1", simtime, 0, 0.0, (byte) 0));
 			else if (randNum >= 350 && randNum <400)
-				conn.do_job_set(Vehicle.add("genr"+i, "car", "genr1", simtime, 0, 13.8, (byte) 0));
+				conn.do_job_set(Vehicle.add("genr"+i, "car", "genr1", simtime, 0, 0.0, (byte) 0));
 			else if (randNum >= 400 && randNum <450)
-				conn.do_job_set(Vehicle.add("gern"+i, "car", "genr2", simtime, 0, 13.8, (byte) 0));
+				conn.do_job_set(Vehicle.add("gern"+i, "car", "genr2", simtime, 0, 0.0, (byte) 0));
 			else if (randNum >= 450 && randNum <499)
-				conn.do_job_set(Vehicle.add("genr"+i, "car", "genr3", simtime, 0, 13.8, (byte) 0));
+				conn.do_job_set(Vehicle.add("genr"+i, "car", "genr3", simtime, 0, 0.0, (byte) 0));
 			else if (randNum >= 499 && randNum <500){
-				conn.do_job_set(Vehicle.add("ambul"+i, "ambulance", "ambul1", simtime, 0, 25.0, (byte) 0));
+				conn.do_job_set(Vehicle.add("ambul"+i, "ambulance", "ambul1", simtime, 0, 0.0, (byte) 0));
 				ambulanceRoute = (List<String>)conn.do_job_get(Vehicle.getRoute("ambul"+i));
 			}
 
@@ -178,7 +177,11 @@ public class MainController {
 			/*csList.get("12").getCamera().get("A2S") + csList.get("12").getCamera().get("B2E") +
 					csList.get("23").getCamera().get("B3S") + csList.get("23").getCamera().get("C3S");*/
 
-
+/*			
+			SumoLinkList tlid = (SumoLinkList) conn.do_job_get(Trafficlights.getControlledLinks("DH8"));
+			for (SumoLink tli: tlid)
+				System.out.println("# Direction: "+tli.direction+" from "+tli.from+" to "+tli.to+" state "+tli.state);
+			System.out.println(conn.do_job_get(Trafficlights.getRedYellowGreenState("DH8")));*/
 
 			//policy2의 적용 -- 기존에 policy1의 발동보다 상위의 priority.
 			if (SoSstate == 2){
@@ -187,6 +190,13 @@ public class MainController {
 				for (Entry<String, CS> e: csList.entrySet()){
 					if (getPassingNodes().contains(e.getKey()))
 						continue;
+					
+/*					if (e.getKey().compareTo("DH8")==0){
+						System.out.println(e.getValue().getTLight());
+						for (TLight t: e.getValue().gettlightMap())
+							System.out.print(t.getKey() + "#" + t.getValue() + "\t");
+					}*/
+						
 
 					if (i%trafficLightUpdateCycle == 0)
 						e.getValue().updateAllTrafficLight(conn, trafficLightSignal);		//기존의 SoSstate==1이었으면 red로 일부 바뀐 신호등이 있기 때문에 이렇게 해주어야함
@@ -313,7 +323,7 @@ public class MainController {
 	}
 
 	private static ArrayList<String> getNodesFromRoutes(List<String> routes){
-		String edgeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.edg.xml";
+		String edgeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.2.edg.xml";
 		ArrayList<String> nodes = new ArrayList<String>();
 
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -342,7 +352,7 @@ public class MainController {
 	}
 
 	private static ArrayList<String> getPassingNodes(){
-		String nodeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.1.nod.xml";
+		String nodeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.2.nod.xml";
 		ArrayList<String> nodes = new ArrayList<String>();
 
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
