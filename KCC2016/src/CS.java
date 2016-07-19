@@ -7,16 +7,17 @@ import java.util.LinkedHashMap;
 import java.util.Random;
 import java.util.Map.Entry;
 
+import de.tudresden.sumo.cmd.Edge;
 import de.tudresden.sumo.cmd.Lane;
 
 
 public class CS {
-	String location;		//located node id, same as id
-	ArrayList<String> edgeList;
-	HashMap<String, Integer> camera;
+	private String location;		//located node id, same as id
+	private ArrayList<String> edgeList;
+	private HashMap<String, Integer> camera;
 	//LinkedHashMap<String, String> tlightMap;
-	ArrayList<TLight> tlightMap;			//중복을 허용하지 않기 때문에 한 엣지에서 두 레인이 모두 같은 방향으로 가게 될 경우 겹쳐버려서 tlight가 저장되지 않는 문제 극복.
-	String tlight;
+	private ArrayList<TLight> tlightMap;			//중복을 허용하지 않기 때문에 한 엣지에서 두 레인이 모두 같은 방향으로 가게 될 경우 겹쳐버려서 tlight가 저장되지 않는 문제 극복.
+	private String tlight;
 	
 	public CS(String l){
 		location = l;
@@ -80,12 +81,9 @@ public class CS {
 		return tlight;
 	}
 	
-	//lane이 한개밖에 없는 상황에서 작성되어 추후 lane의 개수가 늘어나면 수정되어야 함. it is written when the number of lane is 1. After increasing the number of lane,
-	//this should be modified too.
 	public void updateCamera(SumoTraciConnection conn) throws Exception{
-		String laneDefaultName="_0";
 		for (String s: edgeList){
-			int nCar = (int) conn.do_job_get(Lane.getLastStepVehicleNumber(s+laneDefaultName));
+			int nCar = (int) conn.do_job_get(Edge.getLastStepVehicleNumber(s));
 			camera.put(s, nCar);
 		}
 	}

@@ -18,6 +18,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import de.tudresden.sumo.cmd.Edge;
+import de.tudresden.sumo.cmd.Junction;
 import de.tudresden.sumo.cmd.Lane;
 import de.tudresden.sumo.cmd.Route;
 import de.tudresden.sumo.cmd.Simulation;
@@ -47,7 +49,7 @@ public class MainController {
 		SumoTraciConnection conn = new SumoTraciConnection(sumo_bin, config);
 		conn.addOption("step-length", "1");
 		conn.runServer();
-		
+
 		//#### initiation of CS-monitoring camera
 		String line = "";
 		HashMap<String, CS> csList = new HashMap<String, CS>();
@@ -76,7 +78,7 @@ public class MainController {
 			}
 			cs.getValue().initTLight();
 		}
-		
+
 
 		// ####### policy initiation ######
 		ArrayList<Policy> policyList = parsingPolicy(policyDir);
@@ -112,6 +114,7 @@ public class MainController {
 		int flagedTime = 0;			// state 가 sos로 바뀐 시점을 감지하여 저장
 		String ambulanceId = "";
 		List<String> ambulanceRoute = null;
+		int vehicleIdx = 0;
 		// #### 시뮬레이션 시작.
 		for (int i=0; i<3600; i++){
 
@@ -120,17 +123,26 @@ public class MainController {
 
 			//차 랜덤생성(확률)
 			int randNum = (int)(Math.random() * 500);
-			if (randNum < 350)
-				conn.do_job_set(Vehicle.add("rush1"+i, "car", "rush1", simtime, 0, 0.0, (byte) 0));
-			else if (randNum >= 350 && randNum <400)
-				conn.do_job_set(Vehicle.add("genr"+i, "car", "genr1", simtime, 0, 0.0, (byte) 0));
-			else if (randNum >= 400 && randNum <450)
-				conn.do_job_set(Vehicle.add("gern"+i, "car", "genr2", simtime, 0, 0.0, (byte) 0));
-			else if (randNum >= 450 && randNum <499)
-				conn.do_job_set(Vehicle.add("genr"+i, "car", "genr3", simtime, 0, 0.0, (byte) 0));
-			else if (randNum >= 499 && randNum <500){
-				conn.do_job_set(Vehicle.add("ambul"+i, "ambulance", "ambul1", simtime, 0, 0.0, (byte) 0));
-				ambulanceRoute = (List<String>)conn.do_job_get(Vehicle.getRoute("ambul"+i));
+			if (randNum < 350){
+				for (int j=0; j<10; j++)
+					conn.do_job_set(Vehicle.add("rush1"+vehicleIdx++, "car", "rush1", simtime, 0, 0.0, (byte) 0));
+			}
+			else if (randNum >= 350 && randNum <400){
+				for (int j=0; j<5; j++)
+					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr1", simtime, 0, 0.0, (byte) 0));
+			}
+			else if (randNum >= 400 && randNum <450){
+				for (int j=0; j<5; j++)
+					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr2", simtime, 0, 0.0, (byte) 0));
+			}
+			else if (randNum >= 450 && randNum <499){
+				for (int j=0; j<5; j++)
+					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr3", simtime, 0, 0.0, (byte) 0));
+			}
+			else if (randNum >= 499 && randNum <500 && SoSstate != 2){
+				conn.do_job_set(Vehicle.add("ambul"+vehicleIdx, "ambulance", "ambul1", simtime, 0, 0.0, (byte) 0));
+				ambulanceRoute = (List<String>)conn.do_job_get(Vehicle.getRoute("ambul"+vehicleIdx));
+				vehicleIdx++;
 			}
 
 			//traffic light 주기적 업데이트. normal state.
@@ -153,7 +165,7 @@ public class MainController {
 					}
 				}
 			}
-
+			
 			//ambulance가 나타났는지 체크함(policy2의 대비를 하기 위해)
 			List<String> vehicles = (List<String>) conn.do_job_get(Vehicle.getIDList());
 			if (SoSstate != 2 && SoSstate != -2){
@@ -167,6 +179,7 @@ public class MainController {
 
 			// 만약 ambulance가 도로상에 나타났을 경우, 처리를 위해 현재 시간을 flag로 못박고 SoS state를 policy2로 업데이트 함.
 			if (SoSstate == -2){
+				System.out.println("-------------------------------------------------Ambulance appears!!");
 				flagedTime = i;
 				SoSstate = 2;
 			}
@@ -177,7 +190,7 @@ public class MainController {
 			/*csList.get("12").getCamera().get("A2S") + csList.get("12").getCamera().get("B2E") +
 					csList.get("23").getCamera().get("B3S") + csList.get("23").getCamera().get("C3S");*/
 
-/*			
+			/*			
 			SumoLinkList tlid = (SumoLinkList) conn.do_job_get(Trafficlights.getControlledLinks("DH8"));
 			for (SumoLink tli: tlid)
 				System.out.println("# Direction: "+tli.direction+" from "+tli.from+" to "+tli.to+" state "+tli.state);
@@ -185,41 +198,62 @@ public class MainController {
 
 			//policy2의 적용 -- 기존에 policy1의 발동보다 상위의 priority.
 			if (SoSstate == 2){
-				System.out.println("Ambulance appears!!");
 				//기존의 신호등을 원래대로 돌린 뒤
+				
 				for (Entry<String, CS> e: csList.entrySet()){
 					if (getPassingNodes().contains(e.getKey()))
 						continue;
-					
-/*					if (e.getKey().compareTo("DH8")==0){
-						System.out.println(e.getValue().getTLight());
-						for (TLight t: e.getValue().gettlightMap())
-							System.out.print(t.getKey() + "#" + t.getValue() + "\t");
-					}*/
-						
+
+					//사라진 ambulance가 아직 처리되기 전이라면... 
+					if (!((List<String>) conn.do_job_get(Vehicle.getIDList())).contains(ambulanceId))
+						continue;
 
 					if (i%trafficLightUpdateCycle == 0)
 						e.getValue().updateAllTrafficLight(conn, trafficLightSignal);		//기존의 SoSstate==1이었으면 red로 일부 바뀐 신호등이 있기 때문에 이렇게 해주어야함
 
-					/*					if (getNodesFromRoutes((List<String>)conn.do_job_get(Vehicle.getRoute(ambulanceId))).contains(e.getKey())){
-						System.out.println(e.getKey());
-					}*/
+					String locationAmbulance = (String)conn.do_job_get(Vehicle.getRoadID(ambulanceId));
+					String locationAmbulanceTo = getToOfEdge(locationAmbulance);
+					
+					//만약 현재의 location이 edge가 아닌 junction으로 잡히는 경우(가 존재함, SUMO 상의 오류..) 
+					if (locationAmbulanceTo == null){
+						break;
+					}
+					
+					for (String n: getNodesFromRoutes(ambulanceRoute))
+						System.out.print(n+"\t");
+					
+					//현재 ambulance route 상의 CS이며 & 앰뷸런스가 본 엣지 위에 존재한다면. 현재 CS에 관계된 모든 traffic lights를 RED로 바꿈. 
+					if (getNodesFromRoutes(ambulanceRoute).contains(e.getKey())){
+						for (String edge: e.getValue().getEdgeList()){
+//							if (((List<String>) conn.do_job_get(Edge.getLastStepVehicleIDs(edge))).contains(ambulanceId)){
+							if (locationAmbulance.compareTo(edge)==0 && locationAmbulanceTo.compareTo(e.getKey())==0){
+								for (TLight t: e.getValue().gettlightMap()){
+									if (t.getKey().startsWith(edge)){
+										e.getValue().updateTrafficLight(conn, t.getKey(), policyList.get(1).getOperation().getLight());		//해당 edge에서 빠져나가는 노드는 모두 g로 바꾸어줌.
+//										System.out.println("edge: "+edge+"\t"+e.getValue().getTLight());
+									}
+									else
+										e.getValue().updateTrafficLight(conn, t.getKey(), "r");
+								}
+							}
+						}
+					conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
+					}
+				
 					//policy2의 새로운 신호 체계를 적용해야 함. 일단 그 주변 신호는 모두 빨간색으로 업데이트 한뒤
-					//					if (e.getKey().compareTo("12")==0 || e.getKey().compareTo("13")==0 || e.getKey().compareTo("23")==0)
-					if (getNodesFromRoutes((List<String>)conn.do_job_get(Route.getEdges("ambul1"))).contains(e.getKey()))
-						e.getValue().updateAllTrafficLightToRed(conn);
-					for (String tl: ambulanceRoute){
-//						for (String key: e.getValue().gettlightMap().keySet()){
+/*					if (getNodesFromRoutes((List<String>)conn.do_job_get(Route.getEdges("ambul1"))).contains(e.getKey()))
+						e.getValue().updateAllTrafficLightToRed(conn);*/
+					
+/*					for (String tl: ambulanceRoute){
 						for (TLight t: e.getValue().gettlightMap()){
 							if (t.getKey().startsWith(tl)){		//만약 이 edge 명으로 시작하면,
 								e.getValue().updateTrafficLight(conn, t.getKey(), policyList.get(1).getOperation().getLight());		//해당 edge에서 빠져나가는 노드는 모두 g로 바꾸어줌.
 							}
 						}
 						conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
-					}
+					}*/
 				}
 			}
-
 
 			//policy1의 적용. 우선순위가 가장 낮으므로 어떠한 상황도 아닌 normal 상황에서만 발동하게 된다
 			if (nCar >= changeToSoS && SoSstate==0){		//SoS 상황 설정 -- 해당 차로에 100대가 넘는 차량이 몰려있을 경우를 SoS 상황으로 설정함.
@@ -232,7 +266,7 @@ public class MainController {
 			//SoS 상황시 대응 (policy1)
 			if (SoSstate == -1){
 				//모든 신호등을 r로 바꾼 뒤, 
-				System.out.println("SOS!!!!");
+				System.out.println("-----------------------------------------------SOS!!!!");
 				SumoStringList strList = new SumoStringList(monitoringEdges);
 
 				for (Entry<String, CS> e: csList.entrySet()){
@@ -245,7 +279,7 @@ public class MainController {
 						e.getValue().updateAllTrafficLightToRed(conn);
 
 						for (String tl: strList){
-//							for (String key: e.getValue().gettlightMap().keySet()){
+							//							for (String key: e.getValue().gettlightMap().keySet()){
 							for (TLight t: e.getValue().gettlightMap()){
 								if (t.getKey().startsWith(tl)){		//만약 이 edge 명으로 시작하면,
 									e.getValue().updateTrafficLight(conn, t.getKey(), policyList.get(1).getOperation().getLight());		//해당 edge에서 빠져나가는 노드는 모두 g로 바꾸어줌.
@@ -275,6 +309,7 @@ public class MainController {
 					e.getValue().updateAllTrafficLight(conn, trafficLightSignal);
 					conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
 				}
+				System.out.println("------------------------------------------------Emergency finished");
 			}
 
 			//monitoring update
@@ -295,6 +330,7 @@ public class MainController {
 
 	}
 
+	
 	private static ArrayList<Policy> parsingPolicy(String policyDir) {
 		// TODO Auto-generated method stub
 		ArrayList<Policy> policyList = null;
@@ -322,6 +358,7 @@ public class MainController {
 		return policyList;
 	}
 
+	//route가 포함하는 노드를 받아옴. 시작 노드와 end 노드는 제외됨.
 	private static ArrayList<String> getNodesFromRoutes(List<String> routes){
 		String edgeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.2.edg.xml";
 		ArrayList<String> nodes = new ArrayList<String>();
@@ -375,6 +412,32 @@ public class MainController {
 		}
 
 		return nodes;
+	}
+	
+	private static String getToOfEdge(String edge){
+		String edgeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.2.edg.xml";
+		ArrayList<String> nodes = new ArrayList<String>();
+
+		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		DocumentBuilder db;
+		try {
+			db = dbf.newDocumentBuilder();
+			Document doc = db.parse(new File(edgeDir));
+			//일단 노드를 뽑아내서 hashmap에 넣어둠. 
+			NodeList nList = doc.getElementsByTagName("edge");
+			for (int i=0; i<nList.getLength(); i++){
+				Element e = (Element)nList.item(i);
+				if (e.getAttribute("id").compareTo(edge)==0)
+					return e.getAttribute("to");
+			}
+
+
+		} catch (ParserConfigurationException | SAXException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return null;
 	}
 
 }
