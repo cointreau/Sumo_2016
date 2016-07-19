@@ -184,18 +184,6 @@ public class MainController {
 				SoSstate = 2;
 			}
 
-			/*			List<String> tmproutes = (List<String>) conn.do_job_get(Route.getEdges("rush1"));
-			ArrayList<String> passingNodes = getNodesFromRoutes(tmproutes);*/
-			//List<String> monitoringEdges = (List<String>) conn.do_job_get(Route.getEdges("rush1"));	
-			/*csList.get("12").getCamera().get("A2S") + csList.get("12").getCamera().get("B2E") +
-					csList.get("23").getCamera().get("B3S") + csList.get("23").getCamera().get("C3S");*/
-
-			/*			
-			SumoLinkList tlid = (SumoLinkList) conn.do_job_get(Trafficlights.getControlledLinks("DH8"));
-			for (SumoLink tli: tlid)
-				System.out.println("# Direction: "+tli.direction+" from "+tli.from+" to "+tli.to+" state "+tli.state);
-			System.out.println(conn.do_job_get(Trafficlights.getRedYellowGreenState("DH8")));*/
-
 			//policy2의 적용 -- 기존에 policy1의 발동보다 상위의 priority.
 			if (SoSstate == 2){
 				//기존의 신호등을 원래대로 돌린 뒤
@@ -219,18 +207,19 @@ public class MainController {
 						break;
 					}
 					
-					for (String n: getNodesFromRoutes(ambulanceRoute))
-						System.out.print(n+"\t");
+					ArrayList<String> ambulanceRouteNodes = getNodesFromRoutes(ambulanceRoute);
 					
-					//현재 ambulance route 상의 CS이며 & 앰뷸런스가 본 엣지 위에 존재한다면. 현재 CS에 관계된 모든 traffic lights를 RED로 바꿈. 
-					if (getNodesFromRoutes(ambulanceRoute).contains(e.getKey())){
+					//현재 ambulance route 상의 CS이며 & ambulance가 위치한 앞 3구간 이내의 CS이면  
+					if (ambulanceRouteNodes.contains(e.getKey()) && 
+							(ambulanceRouteNodes.indexOf(locationAmbulanceTo) +3 > ambulanceRouteNodes.indexOf(e.getKey())) && 
+							(ambulanceRouteNodes.indexOf(locationAmbulanceTo) <= ambulanceRouteNodes.indexOf(e.getKey()))){
 						for (String edge: e.getValue().getEdgeList()){
-//							if (((List<String>) conn.do_job_get(Edge.getLastStepVehicleIDs(edge))).contains(ambulanceId)){
-							if (locationAmbulance.compareTo(edge)==0 && locationAmbulanceTo.compareTo(e.getKey())==0){
+				
+//							if (locationAmbulance.compareTo(edge)==0 && locationAmbulanceTo.compareTo(e.getKey())==0){ -- 만약 policy2의 신호를 앰뷸런스가 위치한 노드만으로 한정하고 싶은 경우
+							if (ambulanceRoute.contains(edge) && getToOfEdge(edge).compareTo(e.getKey())==0){		// 해당 CS가 포함한 모든 엣지에 대해 이 엣지가 앰뷸런스 루트에 포함된 엣지이며 이 엣지의 to가 현재 CS의 키이면 (이후 조건은 CS의 키 방향으로 진입하는 앰뷸런스 루트 상의 엣지가 if문 안으로 들어가는 것을 막기 위함)
 								for (TLight t: e.getValue().gettlightMap()){
 									if (t.getKey().startsWith(edge)){
 										e.getValue().updateTrafficLight(conn, t.getKey(), policyList.get(1).getOperation().getLight());		//해당 edge에서 빠져나가는 노드는 모두 g로 바꾸어줌.
-//										System.out.println("edge: "+edge+"\t"+e.getValue().getTLight());
 									}
 									else
 										e.getValue().updateTrafficLight(conn, t.getKey(), "r");
@@ -240,7 +229,7 @@ public class MainController {
 					conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
 					}
 				
-					//policy2의 새로운 신호 체계를 적용해야 함. 일단 그 주변 신호는 모두 빨간색으로 업데이트 한뒤
+					//policy2의 신호체계 -- 앰뷸런스의 모든 루트를 전부 g로 바꿈.
 /*					if (getNodesFromRoutes((List<String>)conn.do_job_get(Route.getEdges("ambul1"))).contains(e.getKey()))
 						e.getValue().updateAllTrafficLightToRed(conn);*/
 					
@@ -274,7 +263,6 @@ public class MainController {
 						continue;
 
 					//해당 길목(rush1)에 해당하는 신호등들의 신호만 g로 바꿈. 이부분 코드 수정 필요? rush1에 해당하는 노드를 하드 코딩 말고 뭔가 다른 방법으로 알아내어야 함
-					//					if (e.getKey().compareTo("02")==0 || e.getKey().compareTo("12")==0 || e.getKey().compareTo("13")==0 || e.getKey().compareTo("23")==0 || e.getKey().compareTo("33")==0){
 					if (getNodesFromRoutes((List<String>)conn.do_job_get(Route.getEdges("rush1"))).contains(e.getKey())){
 						e.getValue().updateAllTrafficLightToRed(conn);
 
