@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<routes>
+  <!-- 한국화학연구원~승적골삼거리~구성삼거리~대덕대교~한아름아파트-->
+  <route id="rush1" edges="gneE169 gneE17 gneE511 gneE515 gneE136 gneE138 gneE140 gneE142 gneE144 gneE146 gneE148 gneE202 gneE204 gneE206 gneE272 gneE274 gneE276 gneE278 gneE280 gneE282 gneE620"/>
+  
+  <!-- 충남대~대덕대교~정부대전청사-->
+  <route id="genr1" edges="gneE188 gneE190 gneE192 gneE194 gneE196 gneE198 gneE200 gneE202 gneE204 gneE206 gneE272 gneE274 gneE276 gneE278 gneE280 gneE282 gneE284 gneE374 gneE378"/>
+  <!-- 기초과학지원연구원~ 승적골삼거리~ 대림아파트-->
+  <route id="genr2" edges="gneE155 gneE153 gneE137 gneE514 gneE509 gneE11 gneE125 gneE126"/>
+  <!-- 둔산주공1단지아파트~롯데시네마~만년네거리~KBS~만년고~둔산주공1단지-->
+  <route id="genr3" edges="gneE627 gneE307 gneE293 gneE332 gneE472 gneE474 gneE352 gneE354 gneE356 gneE285 gneE283 gneE281 gneE279 gneE277 gneE275 gneE389 gneE387 gneE385 gneE306 gneE626"/>
+
+  <!-- 보건환경연구원~대덕대교~만년고등학교~만년네거리~우측출구-->
+  <route id="ambul1" edges="gneE589 gneE204 gneE206 gneE272 gneE389 gneE387 gneE385 gneE306 gneE308 gneE314 gneE318 gneE320 gneE322 gneE324 gneE326"/>
+</routes>

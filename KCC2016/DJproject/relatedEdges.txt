@@ -1,0 +1,242 @@
+541_1	gneE548	gneE549	gneE550	gneE551	gneE650	gneE651	
+541_2	gneE550	gneE551	gneE552	gneE553	gneE554	gneE555	
+541_3	gneE554	gneE555	gneE644	gneE645	
+541_4	gneE644	gneE645	gneE646	gneE647	gneE648	gneE649	
+556_1	gneE488	gneE489	gneE490	gneE491	gneE492	gneE493	
+556_2	gneE492	gneE493	gneE494	gneE495	gneE496	gneE497	gneE500	gneE501	
+556_3	gneE516	gneE517	gneE518	gneE519	gneE520	gneE521	gneE522	gneE523	
+556_4	gneE522	gneE523	gneE616	gneE617	gneE636	gneE637	
+556_5	gneE616	gneE617	gneE618	gneE619	
+560_1	gneE524	gneE525	gneE526	gneE527	
+560_2	gneE526	gneE527	gneE528	gneE529	
+577_1	gneE538	gneE539	gneE552	gneE553	
+577_2	gneE530	gneE531	gneE536	gneE537	gneE538	gneE539	
+577_3	gneE532	gneE533	gneE534	gneE535	gneE536	gneE537	
+649_1	gneE610	gneE611	gneE612	gneE613	gneE614	gneE615	
+CB0	gneE288	gneE289	
+CB1	gneE288	gneE289	gneE328	gneE329	gneE338	gneE339	
+CB2	gneE328	gneE329	gneE330	gneE331	gneE336	gneE337	
+CB3	gneE292	gneE293	gneE330	gneE331	gneE332	gneE333	
+CB4	gneE292	gneE293	gneE306	gneE307	gneE384	gneE385	
+CB5	gneE384	gneE385	gneE386	gneE387	gneE390	gneE391	
+CB6	gneE386	gneE387	gneE388	gneE389	gneE392	gneE393	
+CB7	gneE296	gneE297	gneE298	gneE299	gneE404	gneE405	
+CB8	gneE298	gneE299	
+CH1	gneE362	gneE363	gneE376	gneE377	gneE382	gneE383	
+CH2	gneE382	gneE383	
+CS1	gneE468	gneE469	gneE470	gneE471	
+CS2	gneE470	gneE471	
+DD1	gneE248	gneE249	gneE480	gneE481	gneE484	gneE485	
+DD10	gneE266	gneE267	gneE268	gneE269	gneE562	gneE563	
+DD10_1	gneE268	gneE269	gneE270	gneE271	gneE572	gneE573	
+DD11	gneE272	gneE273	gneE274	gneE275	gneE296	gneE297	gneE388	gneE389	
+DD12	gneE274	gneE275	gneE276	gneE277	gneE642	gneE643	
+DD13	gneE276	gneE277	gneE278	gneE279	gneE420	gneE421	
+DD14	gneE278	gneE279	gneE280	gneE281	gneE400	gneE401	gneE444	gneE445	
+DD15	DD15	gneE280	gneE281	gneE282	gneE283	gneE318	gneE320	gneE321	
+DD16	gneE282	gneE283	gneE284	gneE285	gneE620	gneE621	
+DD17	gneE284	gneE285	gneE356	gneE357	gneE374	gneE375	
+DD18	gneE374	gneE375	gneE376	gneE377	gneE378	gneE379	gneE380	gneE381	
+DD19	gneE380	gneE381	
+DD2	gneE248	gneE249	gneE250	gneE251	gneE490	gneE491	
+DD3	gneE250	gneE251	gneE254	gneE255	gneE494	gneE495	gneE612	gneE613	
+DD4	gneE256	gneE257	gneE518	gneE519	gneE534	gneE535	gneE638	gneE639	
+DD5	gneE636	gneE637	gneE638	gneE639	gneE640	gneE641	
+DD6	gneE260	gneE261	gneE524	gneE525	gneE640	gneE641	
+DD7	gneE260	gneE261	gneE262	gneE263	gneE528	gneE529	
+DD8	gneE262	gneE263	gneE264	gneE265	gneE618	gneE619	
+DD9	gneE264	gneE265	gneE266	gneE267	gneE646	gneE647	
+DH0	gneE188	gneE189	
+DH1	gneE188	gneE189	gneE190	gneE191	gneE590	gneE591	gneE624	gneE625	
+DH10	gneE208	gneE209	gneE210	gneE211	gneE218	gneE219	
+DH11	gneE210	gneE211	gneE212	gneE213	gneE220	gneE221	
+DH12	gneE212	gneE213	gneE224	gneE225	
+DH13	gneE224	gneE225	gneE226	gneE227	gneE230	gneE231	
+DH14	gneE226	gneE227	gneE228	gneE229	gneE232	gneE233	
+DH15	gneE228	gneE229	
+DH2	gneE190	gneE191	gneE192	gneE193	gneE592	gneE593	
+DH3	gneE192	gneE193	gneE194	gneE195	gneE602	gneE603	
+DH4	gneE194	gneE195	gneE196	gneE197	gneE600	gneE601	
+DH5	gneE196	gneE197	gneE198	gneE199	gneE606	gneE607	gneE608	gneE609	
+DH6	gneE198	gneE199	gneE200	gneE201	gneE622	gneE623	
+DH7	gneE202	gneE203	gneE204	gneE205	gneE588	gneE589	
+DH8	gneE204	gneE205	gneE206	gneE207	gneE586	gneE587	
+DH9	gneE206	gneE207	gneE208	gneE209	gneE270	gneE271	gneE272	gneE273	
+DJSH1	gneE654	gneE655	gneE656	gneE657	
+DS1	gneE306	gneE307	gneE308	gneE309	gneE626	gneE627	
+DS117_1	gneE404	gneE405	gneE406	gneE407	gneE418	gneE419	
+DS117_2	gneE406	gneE407	gneE408	gneE409	gneE442	gneE443	
+DS117_3	gneE408	gneE409	gneE410	gneE411	gneE440	gneE441	
+DS117_4	gneE412	gneE413	gneE414	gneE415	gneE434	gneE435	
+DS117_5	gneE414	gneE415	gneE416	gneE417	gneE432	gneE433	
+DS2	gneE308	gneE309	gneE314	gneE315	gneE344	gneE345	
+DS3	DD15	gneE314	gneE315	gneE318	gneE402	gneE403	
+DS4	gneE320	gneE321	gneE322	gneE323	gneE416	gneE417	
+DS5	gneE322	gneE323	gneE324	gneE325	gneE628	gneE629	gneE660	gneE661	
+DS6	gneE324	gneE325	gneE326	gneE327	gneE448	gneE449	
+DS7	gneE326	gneE327	
+E-BHA	gneE364	gneE365	
+EX1	gneE246	gneE247	
+EX2	gneE244	gneE245	
+EXP0	gneE218	gneE219	gneE220	gneE221	gneE222	gneE223	
+EXP1	gneE242	gneE243	gneE244	gneE245	gneE570	gneE571	
+EXP2	gneE240	gneE241	gneE242	gneE243	gneE246	gneE247	
+EXP3	gneE234	gneE235	gneE236	gneE237	gneE240	gneE241	
+EXP4	gneE232	gneE233	gneE234	gneE235	gneE238	gneE239	
+EXP5	gneE238	gneE239	
+E_AGI	gneE116	gneE117	
+E_BSRR	gneE154	gneE155	
+E_CNU	gneE590	gneE591	
+E_CWA	gneE398	gneE399	
+E_DDE	gneE520	gneE521	
+E_DDH	gneE496	gneE497	
+E_DDU	gneE186	gneE187	
+E_DDV	gneE184	gneE185	
+E_DJENR	gneE588	gneE589	
+E_DJSH	gneE656	gneE657	
+E_DJYJ1	gneE456	gneE457	
+E_DJYJ2	gneE660	gneE661	
+E_DMS	gneE230	gneE231	
+E_DPM	gneE502	gneE503	
+E_DRA	gneE128	gneE129	
+E_DRA2	gneE126	gneE127	
+E_DSCS	gneE150	gneE151	
+E_DSJG3A	gneE626	gneE627	
+E_EGOLF	gneE236	gneE237	
+E_ETRI	gneE544	gneE545	
+E_EXPOSP	gneE222	gneE223	
+E_GD	gneE602	gneE603	
+E_GOVDJ	gneE628	gneE629	
+E_GOVREC	gneE378	gneE379	
+E_HBA	gneE606	gneE607	
+E_HBA2	gneE604	gneE605	
+E_HBSMW	gneE462	gneE463	
+E_HCMR	gneE120	gneE121	
+E_HNRA	gneE336	gneE337	
+E_HPM	gneE634	gneE635	
+E_HSTA	gneE476	gneE477	
+E_JJM	gneE174	gneE175	
+E_JJRR	gneE172	gneE173	
+E_KAISTE	gneE652	gneE653	
+E_KAISTN	gneE156	gneE157	
+E_KAISTS	gneE622	gneE623	
+E_KBSBR	gneE642	gneE643	
+E_KCRC	E_KCRC	gneE169	
+E_KETR	JJ1	gneE171	
+E_KITPA	gneE650	gneE651	
+E_KITRA	gneE648	gneE649	
+E_KNPSTC	gneE658	gneE659	
+E_KPEC	gneE542	gneE543	
+E_KPSR	gneE546	gneE547	
+E_KSE	gneE108	gneE109	
+E_KTNG	gneE662	gneE663	
+E_MNH	gneE390	gneE391	
+E_NHB	gneE504	gneE505	
+E_NSCM	gneE586	gneE587	
+E_RC	gneE166	gneE167	
+E_SDM	gneE66	gneE67	
+E_SRSHDA	gneE402	gneE403	
+E_WPMA	gneE620	gneE621	
+E_YSL	gneE574	gneE575	
+E_YSPRK	gneE608	gneE609	
+GJ0	gneE48	gneE49	
+GJ1	gneE130	gneE131	gneE132	gneE133	gneE42	gneE43	gneE48	gneE49	
+GJ10	gneE164	gneE165	gneE18	gneE19	gneE20	gneE21	
+GJ11	gneE178	gneE179	gneE20	gneE21	gneE22	gneE23	
+GJ12	gneE22	gneE23	gneE24	gneE25	gneE544	gneE545	
+GJ13	gneE24	gneE25	gneE26	gneE27	gneE546	gneE547	
+GJ14	gneE26	gneE27	gneE28	gneE29	gneE548	gneE549	
+GJ15	gneE28	gneE29	gneE30	gneE31	gneE542	gneE543	
+GJ16	gneE30	gneE31	gneE32	gneE33	gneE614	gneE615	
+GJ17	gneE32	gneE33	gneE34	gneE35	gneE530	gneE531	
+GJ18	gneE34	gneE35	gneE36	gneE37	gneE532	gneE533	
+GJ19	gneE254	gneE255	gneE256	gneE257	gneE36	gneE37	gneE38	gneE39	
+GJ2	gneE130	gneE131	gneE4	gneE5	gneE52	gneE53	gneE54	gneE55	
+GJ20	gneE38	gneE39	gneE40	gneE41	gneE502	gneE503	gneE504	gneE505	
+GJ21	gneE40	gneE41	gneE500	gneE501	gneE516	gneE517	
+GJ3	gneE4	gneE5	gneE6	gneE662	gneE663	gneE7	
+GJ4	gneE6	gneE7	gneE8	gneE86	gneE87	gneE9	
+GJ5	gneE10	gneE11	gneE124	gneE125	gneE8	gneE9	
+GJ6	gneE10	gneE11	gneE120	gneE121	gneE508	gneE509	
+GJ7	gneE508	gneE509	gneE510	gneE511	gneE514	gneE515	
+GJ8	gneE16	gneE166	gneE167	gneE17	gneE510	gneE511	
+GJ9	E_KCRC	gneE16	gneE169	gneE17	gneE18	gneE19	
+GJN1	GJN0	gneE182	
+GJN2	GJN0	gneE180	gneE181	gneE182	gneE186	gneE187	
+GJN3	gneE178	gneE179	gneE180	gneE181	gneE184	gneE185	
+GM1	gneE348	gneE349	
+GS1	gneE582	gneE583	
+GS10	gneE564	gneE565	gneE566	gneE567	
+GS11	gneE566	gneE567	gneE570	gneE571	
+GS2	gneE580	gneE581	gneE582	gneE583	gneE584	gneE585	
+GS3	gneE580	gneE581	gneE630	gneE633	
+GS4	gneE630	gneE631	gneE632	gneE633	gneE634	gneE635	
+GS5	gneE576	gneE577	gneE631	gneE632	
+GS6	gneE572	gneE573	gneE574	gneE575	gneE576	gneE577	
+GS9	gneE562	gneE563	gneE564	gneE565	
+JJ1	JJ1	gneE162	gneE163	gneE164	gneE165	gneE171	
+JJ2	gneE160	gneE161	gneE162	gneE163	gneE172	gneE173	
+JJ3	gneE158	gneE159	gneE160	gneE161	gneE174	gneE175	
+KS1	gneE152	gneE153	gneE154	gneE155	gneE156	gneE157	
+MJ0	gneE478	gneE479	
+MJ1	gneE478	gneE479	gneE480	gneE481	gneE610	gneE611	
+MJ2	gneE484	gneE485	gneE486	gneE487	gneE488	gneE489	
+MJ3	gneE486	gneE487	
+MN67_1	gneE418	gneE419	gneE420	gneE421	gneE422	gneE423	
+MN67_2	gneE422	gneE423	gneE424	gneE425	gneE442	gneE443	
+MN67_3	gneE424	gneE425	gneE426	gneE427	gneE440	gneE441	
+MN67_4	gneE428	gneE429	gneE430	gneE431	gneE434	gneE435	
+MN67_5	gneE430	gneE431	gneE432	gneE433	
+MNR1	gneE392	gneE393	gneE396	gneE397	
+MNR2	gneE396	gneE397	gneE398	gneE399	gneE400	gneE401	
+MNR3	gneE426	gneE427	gneE428	gneE429	gneE436	gneE437	gneE444	gneE445	
+MNR4	gneE410	gneE411	gneE412	gneE413	gneE436	gneE437	gneE454	gneE455	
+MNR5	gneE454	gneE455	gneE456	gneE457	gneE458	gneE459	
+MNR6	gneE458	gneE459	gneE462	gneE463	
+MY1	gneE448	gneE449	gneE450	gneE451	gneE452	gneE453	
+MY2	gneE450	gneE451	
+SC1	gneE136	gneE137	gneE150	gneE151	gneE514	gneE515	
+SC2	gneE136	gneE137	gneE138	gneE139	gneE152	gneE153	
+SC3	gneE138	gneE139	gneE140	gneE141	gneE158	gneE159	
+SC4	gneE140	gneE141	gneE142	gneE143	gneE584	gneE585	
+SC5	gneE142	gneE143	gneE144	gneE145	gneE652	gneE653	gneE658	gneE659	
+SC6	gneE144	gneE145	gneE146	gneE147	gneE654	gneE655	
+SC7	gneE146	gneE147	gneE148	gneE149	
+SC8	gneE148	gneE149	gneE200	gneE201	gneE202	gneE203	
+SN1	gneE84	gneE85	gneE86	gneE87	gneE90	gneE91	
+SN2	gneE90	gneE91	gneE92	gneE93	gneE96	gneE97	
+SN3	gneE100	gneE101	gneE92	gneE93	gneE94	gneE95	
+SN4	gneE100	gneE101	gneE102	gneE103	
+SN5	gneE122	gneE123	gneE94	gneE95	gneE96	gneE97	
+SN6	gneE122	gneE123	gneE124	gneE125	gneE126	gneE127	gneE128	gneE129	
+SS1	gneE58	gneE59	gneE60	gneE61	gneE64	gneE65	
+SS10	gneE112	gneE113	gneE114	gneE115	gneE116	gneE117	
+SS11	gneE102	gneE103	gneE106	gneE107	gneE112	gneE113	
+SS2	gneE56	gneE57	gneE58	gneE59	gneE68	gneE69	
+SS3	gneE54	gneE55	gneE56	gneE57	gneE66	gneE67	
+SS4	gneE68	gneE69	gneE70	gneE71	gneE84	gneE85	
+SS5	gneE70	gneE71	gneE72	gneE73	gneE82	gneE83	
+SS6	gneE110	gneE111	gneE72	gneE73	gneE74	gneE75	gneE80	gneE81	
+SS7	gneE114	gneE115	gneE74	gneE75	gneE88	gneE89	
+SS8	gneE78	gneE79	gneE80	gneE81	gneE82	gneE83	gneE88	gneE89	
+SS9	gneE106	gneE107	gneE108	gneE109	gneE110	gneE111	
+UU1	gneE592	gneE593	gneE594	gneE595	
+UU2	gneE594	gneE595	gneE596	gneE597	
+UU3	gneE596	gneE597	gneE598	gneE599	
+UU4	gneE598	gneE599	gneE600	gneE601	gneE604	gneE605	
+WCG0	gneE624	gneE625	
+WP1	gneE332	gneE333	gneE464	gneE465	gneE472	gneE473	
+WP2	gneE472	gneE473	gneE474	gneE475	gneE476	gneE477	
+WP3	gneE344	gneE345	gneE348	gneE349	gneE352	gneE353	gneE474	gneE475	
+WP4	gneE352	gneE353	gneE354	gneE355	gneE364	gneE365	
+WP5	gneE354	gneE355	gneE356	gneE357	gneE362	gneE363	
+WPE1	gneE464	gneE465	gneE466	gneE467	gneE468	gneE469	
+WPE2	gneE466	gneE467	
+WPM1	gneE338	gneE339	
+YD1	gneE452	gneE453	
+YS0	gneE76	gneE77	
+YS1	gneE44	gneE45	gneE60	gneE61	gneE76	gneE77	gneE78	gneE79	
+YS2	gneE42	gneE43	gneE44	gneE45	gneE64	gneE65	
+YS3	gneE132	gneE133	gneE46	gneE47	gneE50	gneE51	gneE52	gneE53	
+YS4	gneE46	gneE47	
+YS5	gneE50	gneE51	
