@@ -34,7 +34,7 @@ import it.polito.appeal.traci.SumoTraciConnection;
 public class MainController {
 
 	static String trafficLightSignal[] = {"y", "r", "g"};
-	static int changeToSoS = 0;
+	static int changeToTrafficJamState = 0;
 	static int trafficLightUpdateCycle = 0;
 
 	public static void main(String[] args) throws Exception {
@@ -85,18 +85,21 @@ public class MainController {
 
 		//policy1에 해당하는 edges를 넣는다. 본 list는 policy factor의 location이 edges인 것에 대하여 하나씩 있어야 한다. 
 		// 일단 한개만 있으니까 그대로 하고 추가시 코드 수정 필요..  
-		List<String> monitoringEdges = new ArrayList<String>();
+//		List<String> monitoringEdges = new ArrayList<String>();
+		HashMap<String, List<String>> monitoringEdges = new HashMap<String, List<String>>();
 		boolean ambulancePolicyExist = false;
 		boolean trafficjamPolicyExist = false;
 		for (Policy p: policyList){
 			//policy/factor/location/target=edges 인 경우.
 			if (p.getFactor().getLocation_target().compareTo("edges")==0){
+				List<String> tempEdgesList = new ArrayList<String>();
 				for (String edg: p.getFactor().getEdges()){
-					monitoringEdges.add(edg);
+					tempEdgesList.add(edg);
 				}
+				monitoringEdges.put(p.getId(), tempEdgesList);
 			}
-			if (p.getFactor().getVehicle_target().compareTo("all")==0){
-				changeToSoS = p.getFactor().getVehicle_number();
+			if (p.getId().contains("traffic_jam")){
+				changeToTrafficJamState = p.getFactor().getVehicle_number();
 			}
 			//policy에 ambulance 관련된 것이 있는지 우선 체크함
 			if (p.getId().toLowerCase().contains("ambulance")){
@@ -155,7 +158,7 @@ public class MainController {
 				for (int j=0; j<5; j++)
 					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr3", simtime, 0, 0.0, (byte) 0));
 			}
-			else if (randNum >= 499 && randNum <500 && SoSstate != 2 && ambulancePolicyExist){
+			else if (randNum >= 499 && randNum <500 && ambulancePolicyExist){
 				conn.do_job_set(Vehicle.add("ambul"+vehicleIdx, "ambulance", "ambul1", simtime, 0, 0.0, (byte) 0));
 				vehicleIdx++;
 			}
@@ -171,17 +174,35 @@ public class MainController {
 					conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
 				}
 			}
-
-			//traffic jam 발생 체크를 위하여 현재 도로의 상황을 카메라를 통해 받아옴
-			int nCar=0;
-			for (String edg: monitoringEdges){
-				for (Entry<String, CS> e: csList.entrySet()){
-					if (e.getValue().getEdgeList().contains(edg)){
+			
+			//traffic jam 발생 체크를 위하여 현재 도로의 상황을 카메라를 통해 받아옴.
+			HashMap<String, Integer> nCar = new HashMap<String, Integer>();
+			for (Policy p: policyList){
+				//만약 edges라면
+				if (p.getFactor().getLocation_target().compareTo("edges")==0){
+					int number = 0;
+					//monitoringEdges 맵에서 해당 해당 policy에 해당하는 edges를 가지고와서
+					for (String str: monitoringEdges.get(p.getId())){
+						//CS를 돌며 해당 edge를 가지고 있는게 보이면 그 edge위에 있는 차를 가지고옴
+						for (Entry<String, CS> cs: csList.entrySet()){
+							if (cs.getValue().getEdgeList().contains(str)){
+								number += cs.getValue().getCamera().get(str);
+								break;
+							}
+						}
+						nCar.put(p.getId(), number);
+					}
+				}
+			}
+			
+/*			for (Entry<String, List<String>> edgeset: monitoringEdges.entrySet()){
+				for (Entry<String, CS> csset: csList.entrySet()){
+					if (csset.getValue().getEdgeList().contains(edg)){
 						nCar += e.getValue().getCamera().get(edg);
 						break;
 					}
 				}
-			}
+			}*/
 
 			//=============================================== policy 2 ambulance ========================================================			
 			//ambulance가 나타났는지 체크함(factor에 비교하여 체크함)
@@ -270,7 +291,7 @@ public class MainController {
 							break;
 						}
 
-						ArrayList<String> ambulanceRouteNodes = getNodesFromRoutes(ambulanceRoute);
+						ArrayList<String> ambulanceRouteNodes = getNodesFromRoutes(ambulanceRoute, true);
 
 						//현재 ambulance route 상의 CS이며 & ambulance가 위치한 앞 3구간 이내의 CS이면  
 						if (ambulanceRouteNodes.contains(e.getKey()) && 
@@ -309,31 +330,82 @@ public class MainController {
 			}
 
 
-			//=============================================== policy 1 ========================================================
+			//=============================================== policy 1 -- traffic jam========================================================
+			
 			//policy1의 적용. 우선순위가 가장 낮으므로 어떠한 상황도 아닌 normal 상황에서만 발동하게 된다
-			if (nCar >= changeToSoS && SoSstate==0 && trafficjamPolicyExist){		//SoS 상황 설정 -- 해당 차로에 100대가 넘는 차량이 몰려있을 경우를 SoS 상황으로 설정함.
-				SoSstate = -1;
-				flagedTime = i;
+			if (SoSstate==0 && trafficjamPolicyExist){		//SoS 상황 설정 -- 해당 차로에 100대가 넘는 차량이 몰려있을 경우를 SoS 상황으로 설정함.
+				//일단 traffic jam에 해당하는 policy을 가져옴.
+				Policy jamPolicy=null;
+				for (Policy p: policyList){
+					if (p.getId().contains("traffic_jam")){
+						jamPolicy = p;
+						break;
+					}
+				}
+				
+				//policy1의 sign에 따라 SoSstate를 trigger함.
+				switch(jamPolicy.getFactor().getVehicle_number_sign()){
+				case "GE": 
+					if (nCar.get(jamPolicy.getId())>=changeToTrafficJamState){
+						SoSstate = -1;
+						flagedTime = i;
+					}
+					break;
+				case "E":
+					if (nCar.get(jamPolicy.getId())==changeToTrafficJamState){
+						SoSstate = -1;
+						flagedTime = i;
+					}
+					break;
+				case "G":
+					if (nCar.get(jamPolicy.getId())>changeToTrafficJamState){
+						SoSstate = -1;
+						flagedTime = i;
+					}
+					break;
+				case "LE":
+					if (nCar.get(jamPolicy.getId())<=changeToTrafficJamState){
+						SoSstate = -1;
+						flagedTime = i;
+					}
+					break;
+				case "L":
+					if (nCar.get(jamPolicy.getId())<changeToTrafficJamState){
+						SoSstate = -1;
+						flagedTime = i;
+					}
+					break;
+				default:
+					if (nCar.get(jamPolicy.getId())>=changeToTrafficJamState){
+						SoSstate = -1;
+						flagedTime = i;
+					}
+					break;
+				}
 			}
 
-			System.out.println((simtime/1000)+" tick / "+nCar +" cars on the road now");
+			//System.out.println((simtime/1000)+" tick / "+nCar.get("emergency_by_traffic_jam") +" cars on the monitored road now");
 
 			//SoS 상황시 대응 (policy1)
 			if (SoSstate == -1){
 				//모든 신호등을 r로 바꾼 뒤, 
 				System.out.println("-----------------------------------------------SOS!!!!");
-				SumoStringList strList = new SumoStringList(monitoringEdges);
 
 				for (Entry<String, CS> e: csList.entrySet()){
 					if (getPassingNodes().contains(e.getKey()))
 						continue;
 
+					ArrayList<String> operationEdges=null;
+					for (Policy p: policyList){
+						if (p.getId().contains("traffic_jam"))
+							operationEdges = p.getOperation().getEdges();
+					}
+					
 					//해당 길목(rush1)에 해당하는 신호등들의 신호만 g로 바꿈. 이부분 코드 수정 필요? rush1에 해당하는 노드를 하드 코딩 말고 뭔가 다른 방법으로 알아내어야 함
-					if (getNodesFromRoutes((List<String>)conn.do_job_get(Route.getEdges("rush1"))).contains(e.getKey())){
+					if (getNodesFromRoutes(operationEdges, false).contains(e.getKey())){
 						e.getValue().updateAllTrafficLightToRed(conn);
 
-						for (String tl: strList){
-							//							for (String key: e.getValue().gettlightMap().keySet()){
+						for (String tl: monitoringEdges.get("emergency_by_traffic_jam")){
 							for (TLight t: e.getValue().gettlightMap()){
 								if (t.getKey().startsWith(tl)){		//만약 이 edge 명으로 시작하면,
 									e.getValue().updateTrafficLight(conn, t.getKey(), policyList.get(1).getOperation().getLight());		//해당 edge에서 빠져나가는 노드는 모두 g로 바꾸어줌.
@@ -410,7 +482,7 @@ public class MainController {
 	}
 
 	//route가 포함하는 노드를 받아옴. 시작 노드와 end 노드는 제외됨.
-	private static ArrayList<String> getNodesFromRoutes(List<String> routes){
+	private static ArrayList<String> getNodesFromRoutes(List<String> routes, Boolean removeFinalNodes){
 		String edgeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v1.2.edg.xml";
 		ArrayList<String> nodes = new ArrayList<String>();
 
@@ -428,8 +500,10 @@ public class MainController {
 						nodes.add(n.getAttribute("to"));
 				}
 			}
-			if (nodes.size()>1)
-				nodes.remove(nodes.size()-1);
+			if (removeFinalNodes){
+				if (nodes.size()>1)
+					nodes.remove(nodes.size()-1);
+			}
 
 		} catch (ParserConfigurationException | SAXException | IOException e) {
 			// TODO Auto-generated catch block

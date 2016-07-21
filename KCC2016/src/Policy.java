@@ -130,6 +130,9 @@ public class Policy {
 		public String getLight(){
 			return light;
 		}
+		public ArrayList<String> getEdges(){
+			return edges;
+		}
 	}
 	
 	public String getId(){

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<policySet>
+	<!-- when we do not encounter traffic jam, which means for the normal state-->
+	<normal_policy updateCycle="신호등의 주기-int(tick)"/>			
+
+	<policy id="id-String" priority="우선순위-int">
+		<factor>		<!-- external factors, 이 policy의 operation trigger 요인이 되는 환경을 명시 -->
+			<location target="모니터링 대상 외부 환경(도로)-String(all, edges)">all일 경우 모든 엣지를 관찰하므로 생략, edges일 경우 대상 edge를 띄어쓰기로 명시하여 적음. ex) A2S B2E B3S C3S </location>		
+			<vehicle target="모니터링 대상 vehicle-String(all, ambulance, detect...)">	
+				<number>모니터링 대상 vehicle이 본 숫자 이상이 되면 operation trigger-int</number>			
+			</vehicle>
+		</factor>
+
+		<operation>		<!-- factor의 요건이 충족되었을 경우, 아래의 operation을 trigger함 -->
+			<location target="operation의 대상 장소-String(edges, follow)">follow일 경우 위의 vehicle의 route에 포함된 모든 엣지가 operation의 대상이 되므로 생략, edges일 경우 대상 edge를 띄어쓰기로 명시하여 적음</location>	
+			<time>operation을 유지할 시간 길이-int(tick)</time>
+			<light>해당 edges의 traffic lights를 무엇으로 바꿀 것인지에 대한 결정-String(g,r,y)</light>
+		</operation>
+	</policy>
+
+
+	<!-- example -->
+	<policy id="2" priority="1">
+		<factor>		
+			<location target="all"/>		
+			<vehicle target="ambulance">			
+				<number>1</number>			
+			</vehicle>
+		</factor>
+
+		<operation>		
+			<location target="follow"/>
+			<time>15</time>
+			<light>g</light>
+		</operation>
+	</policy>
+
+</policySet>
