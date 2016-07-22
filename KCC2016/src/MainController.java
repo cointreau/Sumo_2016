@@ -41,7 +41,7 @@ public class MainController {
 		String sumo_bin = "C:/Users/WonKyung/git/KCC2016/sumo-0.25.0/bin/sumo-gui.exe";
 		String config = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_sim.cfg";
 		String relEdgesFileDir = "C:/Users/WonKyung/git/KCC2016/DJproject/relatedEdges.txt";
-		String trafDirectionFileDir = "C:/Users/WonKyung/git/KCC2016/DJproject/trafficDirection.txt";
+		//		String trafDirectionFileDir = "C:/Users/WonKyung/git/KCC2016/DJproject/trafficDirection.txt";
 		BufferedReader br = new BufferedReader(new FileReader(new File(relEdgesFileDir)));
 		String policyDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_policy_v1.1.xml";
 
@@ -85,7 +85,7 @@ public class MainController {
 
 		//policy1에 해당하는 edges를 넣는다. 본 list는 policy factor의 location이 edges인 것에 대하여 하나씩 있어야 한다. 
 		// 일단 한개만 있으니까 그대로 하고 추가시 코드 수정 필요..  
-//		List<String> monitoringEdges = new ArrayList<String>();
+		//		List<String> monitoringEdges = new ArrayList<String>();
 		HashMap<String, List<String>> monitoringEdges = new HashMap<String, List<String>>();
 		boolean ambulancePolicyExist = false;
 		boolean trafficjamPolicyExist = false;
@@ -134,6 +134,10 @@ public class MainController {
 
 		//vehicle의 수를 i보다 더 늘리기 위한 숫자.
 		int vehicleIdx = 0;
+
+		//현재의 priority를 기억한다.. 임의의 priority 숫자(가장 높은 숫자)
+		int priority = Integer.MAX_VALUE;
+
 		// #### 시뮬레이션 시작.
 		for (int i=0; i<3600; i++){
 
@@ -174,7 +178,7 @@ public class MainController {
 					conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
 				}
 			}
-			
+
 			//traffic jam 발생 체크를 위하여 현재 도로의 상황을 카메라를 통해 받아옴.
 			HashMap<String, Integer> nCar = new HashMap<String, Integer>();
 			for (Policy p: policyList){
@@ -194,20 +198,13 @@ public class MainController {
 					}
 				}
 			}
-			
-/*			for (Entry<String, List<String>> edgeset: monitoringEdges.entrySet()){
-				for (Entry<String, CS> csset: csList.entrySet()){
-					if (csset.getValue().getEdgeList().contains(edg)){
-						nCar += e.getValue().getCamera().get(edg);
-						break;
-					}
-				}
-			}*/
+
 
 			//=============================================== policy 2 ambulance ========================================================			
 			//ambulance가 나타났는지 체크함(factor에 비교하여 체크함)
 			List<String> vehicles = (List<String>) conn.do_job_get(Vehicle.getIDList());
-			if (SoSstate != 2 && SoSstate != -2 && ambulancePolicyExist){
+			if (SoSstate != 2 && SoSstate != -2 && ambulancePolicyExist){ 
+
 				//policyList에서 ambulance에 해당하는 policy을 뽑아옴
 				Policy ambulPolicy=null;
 				for (Policy p: policyList){
@@ -216,7 +213,7 @@ public class MainController {
 						break;
 					}
 				}
-
+				
 				//이 state가 새로이 시작하게 되므로 amblanceList 초기화
 				ambulances.clear();
 
@@ -225,37 +222,50 @@ public class MainController {
 					if (str.startsWith("ambul")){
 						ambulanceRoute = (List<String>)conn.do_job_get(Vehicle.getRoute(str));
 						ambulances.put(str, ambulanceRoute);
-						//						ambulanceId = str;
-						//						SoSstate = -2;
 					}
 				}
 
-				//policy의 sign에 따라 다르게 SoSstate를 규정할 수 있게 되므로 추가해야함
-				switch(ambulPolicy.getFactor().getVehicle_number_sign()){
-				case "GE": 
-					if (ambulances.size()>=ambulPolicy.getFactor().getVehicle_number())
-						SoSstate = -2;
-					break;
-				case "E":
-					if (ambulances.size()==ambulPolicy.getFactor().getVehicle_number())
-						SoSstate = -2;
-					break;
-				case "G":
-					if (ambulances.size()>ambulPolicy.getFactor().getVehicle_number())
-						SoSstate = -2;
-					break;
-				case "LE":
-					if (ambulances.size()<=ambulPolicy.getFactor().getVehicle_number())
-						SoSstate = -2;
-					break;
-				case "L":
-					if (ambulances.size()<ambulPolicy.getFactor().getVehicle_number())
-						SoSstate = -2;
-					break;
-				default:
-					if (ambulances.size()>=ambulPolicy.getFactor().getVehicle_number())
-						SoSstate = -2;
-					break;
+
+				if (ambulPolicy.getPriority() < priority) {					
+					//policy의 sign에 따라 다르게 SoSstate를 규정할 수 있게 되므로 추가해야함
+					switch(ambulPolicy.getFactor().getVehicle_number_sign()){
+					case "GE": 
+						if (ambulances.size()>=ambulPolicy.getFactor().getVehicle_number()){
+							SoSstate = -2;
+							priority = ambulPolicy.getPriority();
+						}
+						break;
+					case "E":
+						if (ambulances.size()==ambulPolicy.getFactor().getVehicle_number()){
+							SoSstate = -2;
+							priority = ambulPolicy.getPriority();
+						}
+						break;
+					case "G":
+						if (ambulances.size()>ambulPolicy.getFactor().getVehicle_number()){
+							SoSstate = -2;
+							priority = ambulPolicy.getPriority();
+						}
+						break;
+					case "LE":
+						if (ambulances.size()<=ambulPolicy.getFactor().getVehicle_number()){
+							SoSstate = -2;
+							priority = ambulPolicy.getPriority();
+						}
+						break;
+					case "L":
+						if (ambulances.size()<ambulPolicy.getFactor().getVehicle_number()){
+							SoSstate = -2;
+							priority = ambulPolicy.getPriority();
+						}
+						break;
+					default:
+						if (ambulances.size()>=ambulPolicy.getFactor().getVehicle_number()){
+							SoSstate = -2;
+							priority = ambulPolicy.getPriority();
+						}
+						break;
+					}
 				}
 			}
 
@@ -331,9 +341,9 @@ public class MainController {
 
 
 			//=============================================== policy 1 -- traffic jam========================================================
-			
+
 			//policy1의 적용. 우선순위가 가장 낮으므로 어떠한 상황도 아닌 normal 상황에서만 발동하게 된다
-			if (SoSstate==0 && trafficjamPolicyExist){		//SoS 상황 설정 -- 해당 차로에 100대가 넘는 차량이 몰려있을 경우를 SoS 상황으로 설정함.
+			if (SoSstate!=1 && SoSstate!=-1 && trafficjamPolicyExist){		//SoS 상황 설정 -- 해당 차로에 x대가 넘는 차량이 몰려있을 경우를 SoS 상황으로 설정함.
 				//일단 traffic jam에 해당하는 policy을 가져옴.
 				Policy jamPolicy=null;
 				for (Policy p: policyList){
@@ -342,49 +352,58 @@ public class MainController {
 						break;
 					}
 				}
-				
-				//policy1의 sign에 따라 SoSstate를 trigger함.
-				switch(jamPolicy.getFactor().getVehicle_number_sign()){
-				case "GE": 
-					if (nCar.get(jamPolicy.getId())>=changeToTrafficJamState){
-						SoSstate = -1;
-						flagedTime = i;
+
+				if (jamPolicy.getPriority() < priority){
+					//policy1의 sign에 따라 SoSstate를 trigger함.
+					switch(jamPolicy.getFactor().getVehicle_number_sign()){
+					case "GE": 
+						if (nCar.get(jamPolicy.getId())>=changeToTrafficJamState){
+							SoSstate = -1;
+							flagedTime = i;
+							priority = jamPolicy.getPriority();
+						}
+						break;
+					case "E":
+						if (nCar.get(jamPolicy.getId())==changeToTrafficJamState){
+							SoSstate = -1;
+							flagedTime = i;
+							priority = jamPolicy.getPriority();
+						}
+						break;
+					case "G":
+						if (nCar.get(jamPolicy.getId())>changeToTrafficJamState){
+							SoSstate = -1;
+							flagedTime = i;
+							priority = jamPolicy.getPriority();
+						}
+						break;
+					case "LE":
+						if (nCar.get(jamPolicy.getId())<=changeToTrafficJamState){
+							SoSstate = -1;
+							flagedTime = i;
+							priority = jamPolicy.getPriority();
+						}
+						break;
+					case "L":
+						if (nCar.get(jamPolicy.getId())<changeToTrafficJamState){
+							SoSstate = -1;
+							flagedTime = i;
+							priority = jamPolicy.getPriority();
+						}
+						break;
+					default:
+						if (nCar.get(jamPolicy.getId())>=changeToTrafficJamState){
+							SoSstate = -1;
+							flagedTime = i;
+							priority = jamPolicy.getPriority();
+						}
+						break;
 					}
-					break;
-				case "E":
-					if (nCar.get(jamPolicy.getId())==changeToTrafficJamState){
-						SoSstate = -1;
-						flagedTime = i;
-					}
-					break;
-				case "G":
-					if (nCar.get(jamPolicy.getId())>changeToTrafficJamState){
-						SoSstate = -1;
-						flagedTime = i;
-					}
-					break;
-				case "LE":
-					if (nCar.get(jamPolicy.getId())<=changeToTrafficJamState){
-						SoSstate = -1;
-						flagedTime = i;
-					}
-					break;
-				case "L":
-					if (nCar.get(jamPolicy.getId())<changeToTrafficJamState){
-						SoSstate = -1;
-						flagedTime = i;
-					}
-					break;
-				default:
-					if (nCar.get(jamPolicy.getId())>=changeToTrafficJamState){
-						SoSstate = -1;
-						flagedTime = i;
-					}
-					break;
 				}
+
 			}
 
-			//System.out.println((simtime/1000)+" tick / "+nCar.get("emergency_by_traffic_jam") +" cars on the monitored road now");
+			System.out.println((simtime/1000)+" tick / "+nCar.get("emergency_by_traffic_jam") +" cars on the monitored road now");
 
 			//SoS 상황시 대응 (policy1)
 			if (SoSstate == -1){
@@ -400,7 +419,7 @@ public class MainController {
 						if (p.getId().contains("traffic_jam"))
 							operationEdges = p.getOperation().getEdges();
 					}
-					
+
 					//해당 길목(rush1)에 해당하는 신호등들의 신호만 g로 바꿈. 이부분 코드 수정 필요? rush1에 해당하는 노드를 하드 코딩 말고 뭔가 다른 방법으로 알아내어야 함
 					if (getNodesFromRoutes(operationEdges, false).contains(e.getKey())){
 						e.getValue().updateAllTrafficLightToRed(conn);
@@ -428,6 +447,7 @@ public class MainController {
 				SoSstate = 0;
 				flagedTime = 0;
 				ambulanceId = "";
+				priority = Integer.MAX_VALUE;
 				//tlight 정상화
 				for (Entry<String, CS> e: csList.entrySet()){
 					if (getPassingNodes().contains(e.getKey()))
