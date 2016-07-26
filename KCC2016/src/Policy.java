@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -89,6 +91,7 @@ public class Policy {
 		ArrayList<String> edges = new ArrayList<String>();		//string 형태의 location edges를 파싱하여 하나씩 가지고 있음.
 		int sustainingtime;
 		String light;
+		int followCurrentEdgesNumber;
 		
 		public Operation(Element elem) {
 			//location 노드 파싱
@@ -104,9 +107,22 @@ public class Policy {
 					edges.add(enl.item(i).getTextContent());
 				}
 			}//follow일 경우의 처리
-			else if (target.compareTo("follow")==0){
+			else if (target.compareTo("follow-all")==0){
 				location_target = target;
 				location_edges = "";
+			}
+			
+			//follow-current, follow-current(숫자)가 존재할 수 있음.
+			else if (target.contains("follow-current")){
+				location_target = target;
+				location_edges = "";
+				Pattern p = Pattern.compile("-?\\d+");
+				Matcher m = p.matcher(target);
+				//follow-current(숫자)일 경우
+				if (m.find())
+					followCurrentEdgesNumber = Integer.parseInt(m.group());
+				else
+					followCurrentEdgesNumber = 1;		//없으면 그냥 current나 동일함. follow-current는 follow-current1과 동일.
 			}
 			
 			//time 노드 파싱
@@ -132,6 +148,9 @@ public class Policy {
 		}
 		public ArrayList<String> getEdges(){
 			return edges;
+		}
+		public int getFollowCurrentEdgesNumber(){
+			return followCurrentEdgesNumber;
 		}
 	}
 	
