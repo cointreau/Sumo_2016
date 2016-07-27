@@ -4,7 +4,7 @@
 	<normal_policy updateCycle="10"/>	<!-- just update the traffic lights every 10 ticks-->			
 
 	<!-- when there are too many cars on the specific roads -->
-	<policy id="emergency_by_traffic_jam" priority="1">
+	<policy id="emergency_by_traffic_jam" priority="3">
 		<factor>		<!-- external factors -->
 			<location target="edges">
 				<edge>gneE202</edge>
@@ -13,8 +13,10 @@
 				<edge>gneE272</edge>
 				<edge>gneE274</edge></location>		<!-- on these edges,-->
 			<vehicle target="all">			<!-- just for all vehicle on these edges, -->
-				<number sign="GE">20</number>			<!-- if the number of vehicles is over 230, on these edges, -->
+				<number>20</number>			<!-- if the number of vehicles is over 230, on these edges, -->
+				<sign>GE</sign>
 			</vehicle>
+			<time>5</time>
 		</factor>
 
 		<operation>		<!-- order this operation to the traffic lights. -->
@@ -31,16 +33,18 @@
 
 
 	<!-- if a vehicle which should be go to its destination earlier like ambulance appears, let it go faster -->
-	<policy id="emergency_by_ambulance" priority="3">
+	<policy id="emergency_by_ambulance" priority="1">
 		<factor>		<!-- external factors -->
 			<location target="all"/>		<!-- on all edges,-->
 			<vehicle target="ambulance">			<!-- just for ambulance on all edges, -->
-				<number sign="GE">1</number>			<!-- if the ambulance vehicle appears on all edges, -->
+				<number>1</number>			<!-- if the ambulance vehicle appears on all edges, -->
+				<sign>GE</sign>
 			</vehicle>
+			<time>1</time>
 		</factor>
 
 		<operation>		<!-- order this operation to the traffic lights. -->
-			<location target="follow"/>
+			<location target="follow-all"/>
 			<time>5</time>
 			<light>g</light>
 		</operation>
@@ -53,7 +57,9 @@
 			<location target="all"/>		<!-- on all edges,-->
 			<vehicle target="detect">			<!-- just for vehicles to be detected on all edges, -->
 				<number>1</number>			<!-- if the ambulance vehicle appears on all edges -->
+				<sign>GE</sign>
 			</vehicle>
+			<time>1</time>
 		</factor>
 
 		<operation>		<!-- order this operation to the traffic lights. -->
