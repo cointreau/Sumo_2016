@@ -34,6 +34,7 @@ public class Policy {
 		String vehicle_target;			//all, ambulance
 		int vehicle_number;
 		String vehicle_number_sign;		//GE, G, E, LE, L 
+		int time;
 		
 		public Factor(Element elem) {
 			//location 노드 파싱
@@ -60,7 +61,12 @@ public class Policy {
 			list = elem.getElementsByTagName("vehicle");
 			vehicle_target = ((Element)list.item(0)).getAttribute("target");
 			vehicle_number = Integer.parseInt(((Element)list.item(0)).getElementsByTagName("number").item(0).getTextContent());
-			vehicle_number_sign = ((Element)((NodeList)((Element)list.item(0)).getElementsByTagName("number")).item(0)).getAttribute("sign");
+//			vehicle_number_sign = ((Element)((NodeList)((Element)list.item(0)).getElementsByTagName("number")).item(0)).getAttribute("sign");
+			vehicle_number_sign = ((Element)list.item(0)).getElementsByTagName("sign").item(0).getTextContent();
+			
+			list = elem.getElementsByTagName("time");
+			time = Integer.parseInt(((Element)list.item(0)).getTextContent());
+			System.out.println(time);
 		}
 		
 		public String getLocation_target(){
@@ -82,6 +88,9 @@ public class Policy {
 		
 		public String getVehicle_number_sign(){
 			return vehicle_number_sign;
+		}
+		public int getTime(){
+			return time;
 		}
 	}
 	

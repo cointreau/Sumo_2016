@@ -5,12 +5,14 @@
 
 	<policy id="id-String" priority="본 policy의 우선순위-int">
 		<factor>		<!-- external factors, 이 policy의 operation trigger 요인이 되는 환경을 명시, 여기서 카메라가 외부 환경을 모니터 하기 때문에 factor는 환경 / 외부 시스템에 대한 것이 됨.-->
-			<location target="모니터링 대상 외부 환경(도로)-String(all, edges)">all일 경우 모든 엣지를 관찰하므로 생략, edges일 경우 대상 edge를 location 하위에 edge로 써줌.</location>
+			<location target="모니터링 대상 외부 환경(도로)-String(all, edges)">all일 경우 모든 엣지를 관찰하므로 생략, edges일 경우 대상 edge를 location 하위에 edge로 써줌.
 				<edge>모니터링 대상 엣지를 하나씩 명시해줌. all 일 경우 명시할 필요 없음. - String</edge>
-				<edge>gneE199</edge>
+				<edge>gneE199</edge></location>
 			<vehicle target="모니터링 대상 vehicle-String(all, ambulance)">	
-				<number sign="GE-String(GE,G,LE,L,E), default는 GE므로 잘못 입력했을 경우 GE로 들어감">모니터링 대상 vehicle이 본 숫자의 해당 sign(이상(GE),초과(G),이하(LE),미만(L),동일(E)) 일 경우 operation을 trigger-int</number>
+				<number>모니터링 대상 vehicle이 본 숫자의 해당 sign(이상(GE),초과(G),이하(LE),미만(L),동일(E)) 일 경우 operation을 trigger-int</number>
+				<sign>GE-String(GE,G,LE,L,E), default는 GE므로 잘못 입력했을 경우 GE로 들어감</sign>
 			</vehicle>
+			<time>이 시간동안 지속되면.</time>
 		</factor>
 
 		<operation>		<!-- factor의 요건이 충족되었을 경우, 아래의 operation을 trigger함  여기서 operation을 실행할 수 있는 actuator는 신호등 뿐이므로 신호등의 기능이 됨-->
@@ -34,7 +36,7 @@
 		</factor>
 
 		<operation>		
-			<location target="follow"/>
+			<location target="follow-current3"/>
 			<time>15</time>
 			<light>g</light>
 		</operation>
