@@ -127,7 +127,7 @@ public class MainController {
 
 
 		int SoSstate = 0;			// 0-- normal state, minus number-- SoS state before control, plus number -- SoS state after control
-		int flagedTime = 0;			// state 가 sos로 바뀐 시점을 감지하여 저장
+		int[] flagedTime = new int[policyList.size()];			// state 가 sos로 바뀐 시점을 감지하여 저장, flag의 인덱스는 policyList의 인덱스 순서와 동일.
 
 		//ambulance를 위한 변수들
 		List<String> ambulanceRoute = null;
@@ -138,7 +138,8 @@ public class MainController {
 
 		//현재의 priority를 기억한다.. 임의의 priority 숫자(가장 높은 숫자)
 		int priority = Integer.MAX_VALUE;
-
+		Policy nowPolicy = null;
+		
 		// #### 시뮬레이션 시작.
 		for (int i=0; i<3600; i++){
 
@@ -201,7 +202,7 @@ public class MainController {
 			}
 
 
-			//=============================================== policy 2 ambulance ========================================================			
+			//=============================================== policy2 ambulance ========================================================			
 			//ambulance가 나타났는지 체크함(factor에 비교하여 체크함)
 			List<String> vehicles = (List<String>) conn.do_job_get(Vehicle.getIDList());
 			if (SoSstate != 2 && SoSstate != -2 && ambulancePolicyExist){ 
@@ -233,38 +234,50 @@ public class MainController {
 					case "GE": 
 						if (ambulances.size()>=ambulPolicy.getFactor().getVehicle_number()){
 							SoSstate = -2;
-							priority = ambulPolicy.getPriority();
+//							priority = ambulPolicy.getPriority();
 						}
+						else
+							flagedTime[policyList.indexOf(ambulPolicy)] = 0;
 						break;
 					case "E":
 						if (ambulances.size()==ambulPolicy.getFactor().getVehicle_number()){
 							SoSstate = -2;
-							priority = ambulPolicy.getPriority();
+//							priority = ambulPolicy.getPriority();
 						}
+						else
+							flagedTime[policyList.indexOf(ambulPolicy)] = 0;
 						break;
 					case "G":
 						if (ambulances.size()>ambulPolicy.getFactor().getVehicle_number()){
 							SoSstate = -2;
-							priority = ambulPolicy.getPriority();
+//							priority = ambulPolicy.getPriority();
 						}
+						else
+							flagedTime[policyList.indexOf(ambulPolicy)] = 0;
 						break;
 					case "LE":
 						if (ambulances.size()<=ambulPolicy.getFactor().getVehicle_number()){
 							SoSstate = -2;
-							priority = ambulPolicy.getPriority();
+//							priority = ambulPolicy.getPriority();
 						}
+						else
+							flagedTime[policyList.indexOf(ambulPolicy)] = 0;
 						break;
 					case "L":
 						if (ambulances.size()<ambulPolicy.getFactor().getVehicle_number()){
 							SoSstate = -2;
-							priority = ambulPolicy.getPriority();
+//							priority = ambulPolicy.getPriority();
 						}
+						else
+							flagedTime[policyList.indexOf(ambulPolicy)] = 0;
 						break;
 					default:
 						if (ambulances.size()>=ambulPolicy.getFactor().getVehicle_number()){
 							SoSstate = -2;
-							priority = ambulPolicy.getPriority();
+//							priority = ambulPolicy.getPriority();
 						}
+						else
+							flagedTime[policyList.indexOf(ambulPolicy)] = 0;
 						break;
 					}
 				}
@@ -272,23 +285,41 @@ public class MainController {
 
 			// 만약 ambulance가 도로상에 나타났을 경우, 처리를 위해 현재 시간을 flag로 못박고 SoS state를 policy2로 업데이트 함.
 			if (SoSstate == -2){
-				System.out.println("-------------------------------------------------Ambulance appears!!");
-				flagedTime = i;
-				SoSstate = 2;
+				int time=0;
+				int index=0;
+				int prior = 0;
+				for (Policy p: policyList){
+					if (p.getId().contains("ambulance")){
+						index = policyList.indexOf(p);
+						time = p.getFactor().getTime();
+						priority = p.getPriority();
+						break;
+					}
+				}
+				
+				//time을 넘어섰는지 확인 후 SoSstate를 변경한다.
+				if (flagedTime[index] == 0)
+					flagedTime[index] = i;
+				else if (flagedTime[index] != 0 && i>=flagedTime[index] + time-1) {
+					SoSstate = 2;
+					flagedTime[index] = i;
+					priority = prior;
+					System.out.println("-------------------------------------------------Ambulance appears!!");
+				}
 			}
 
 			//policy2의 적용 -- 기존에 policy1의 발동보다 상위의 priority.
 			if (SoSstate == 2){
 				//기존의 신호등을 원래대로 돌린 뒤
-
 				//policy를 가지고옴
-				Policy ambulPolicy=null;;
+				Policy ambulPolicy=null;
 				for (Policy pol: policyList){
 					if (pol.getId().contains("ambulance")){
 						ambulPolicy = pol;
 						break;
 					}
 				}
+				nowPolicy = ambulPolicy;
 
 				//만약 미해당되는 CS라면
 				for (Entry<String, CS> e: csList.entrySet()){
@@ -393,49 +424,85 @@ public class MainController {
 					switch(jamPolicy.getFactor().getVehicle_number_sign()){
 					case "GE": 
 						if (nCar.get(jamPolicy.getId())>=changeToTrafficJamState){
-							SoSstate = -1;
-							flagedTime = i;
-							priority = jamPolicy.getPriority();
+							if (flagedTime[policyList.indexOf(jamPolicy)] == 0)
+								flagedTime[policyList.indexOf(jamPolicy)] = i;
+							else if (flagedTime[policyList.indexOf(jamPolicy)] != 0 && i>=flagedTime[policyList.indexOf(jamPolicy)] + jamPolicy.getFactor().getTime()-1){
+								SoSstate = -1;
+								priority = jamPolicy.getPriority();
+								flagedTime[policyList.indexOf(jamPolicy)] = i;
+							}
 						}
+						else
+							flagedTime[policyList.indexOf(jamPolicy)] = 0;
 						break;
 					case "E":
 						if (nCar.get(jamPolicy.getId())==changeToTrafficJamState){
-							SoSstate = -1;
-							flagedTime = i;
-							priority = jamPolicy.getPriority();
+							if (flagedTime[policyList.indexOf(jamPolicy)] == 0)
+								flagedTime[policyList.indexOf(jamPolicy)] = i;
+							else if (flagedTime[policyList.indexOf(jamPolicy)] != 0 && i>=flagedTime[policyList.indexOf(jamPolicy)] + jamPolicy.getFactor().getTime()-1){
+								SoSstate = -1;
+								priority = jamPolicy.getPriority();
+								flagedTime[policyList.indexOf(jamPolicy)] = i;
+							}
 						}
+						else
+							flagedTime[policyList.indexOf(jamPolicy)] = 0;
 						break;
 					case "G":
 						if (nCar.get(jamPolicy.getId())>changeToTrafficJamState){
-							SoSstate = -1;
-							flagedTime = i;
-							priority = jamPolicy.getPriority();
+							if (flagedTime[policyList.indexOf(jamPolicy)] == 0)
+								flagedTime[policyList.indexOf(jamPolicy)] = i;
+							else if (flagedTime[policyList.indexOf(jamPolicy)] != 0 && i>=flagedTime[policyList.indexOf(jamPolicy)] + jamPolicy.getFactor().getTime()-1){
+								SoSstate = -1;
+								priority = jamPolicy.getPriority();
+								flagedTime[policyList.indexOf(jamPolicy)] = i;
+							}
 						}
+						else
+							flagedTime[policyList.indexOf(jamPolicy)] = 0;
 						break;
 					case "LE":
 						if (nCar.get(jamPolicy.getId())<=changeToTrafficJamState){
-							SoSstate = -1;
-							flagedTime = i;
-							priority = jamPolicy.getPriority();
+							if (flagedTime[policyList.indexOf(jamPolicy)] == 0)
+								flagedTime[policyList.indexOf(jamPolicy)] = i;
+							else if (flagedTime[policyList.indexOf(jamPolicy)] != 0 && i>=flagedTime[policyList.indexOf(jamPolicy)] + jamPolicy.getFactor().getTime()-1){
+								SoSstate = -1;
+								priority = jamPolicy.getPriority();
+								flagedTime[policyList.indexOf(jamPolicy)] = i;
+							}
 						}
+						else
+							flagedTime[policyList.indexOf(jamPolicy)] = 0;
 						break;
 					case "L":
 						if (nCar.get(jamPolicy.getId())<changeToTrafficJamState){
-							SoSstate = -1;
-							flagedTime = i;
-							priority = jamPolicy.getPriority();
+							if (flagedTime[policyList.indexOf(jamPolicy)] == 0)
+								flagedTime[policyList.indexOf(jamPolicy)] = i;
+							else if (flagedTime[policyList.indexOf(jamPolicy)] != 0 && i>=flagedTime[policyList.indexOf(jamPolicy)] + jamPolicy.getFactor().getTime()-1){
+								SoSstate = -1;
+								priority = jamPolicy.getPriority();
+								flagedTime[policyList.indexOf(jamPolicy)] = i;
+							}
 						}
+						else
+							flagedTime[policyList.indexOf(jamPolicy)] = 0;
 						break;
 					default:
 						if (nCar.get(jamPolicy.getId())>=changeToTrafficJamState){
-							SoSstate = -1;
-							flagedTime = i;
-							priority = jamPolicy.getPriority();
+							if (flagedTime[policyList.indexOf(jamPolicy)] == 0)
+								flagedTime[policyList.indexOf(jamPolicy)] = i;
+							else if (flagedTime[policyList.indexOf(jamPolicy)] != 0 && i>=flagedTime[policyList.indexOf(jamPolicy)] + jamPolicy.getFactor().getTime()-1){
+								SoSstate = -1;
+								priority = jamPolicy.getPriority();
+								flagedTime[policyList.indexOf(jamPolicy)] = i;
+							}
 						}
+						else
+							flagedTime[policyList.indexOf(jamPolicy)] = 0;
 						break;
 					}
 				}
-
+				
 			}
 
 			System.out.println((simtime/1000)+" tick / "+nCar.get("emergency_by_traffic_jam") +" cars on the monitored road now");
@@ -457,6 +524,7 @@ public class MainController {
 							break;
 						}
 					}
+					nowPolicy = jamPolicy;
 
 					//해당 길목(rush1)에 해당하는 신호등들의 신호만 g로 바꿈. 이부분 코드 수정 필요? rush1에 해당하는 노드를 하드 코딩 말고 뭔가 다른 방법으로 알아내어야 함
 					if (getNodesFromRoutes(jamPolicy.getOperation().getEdges(), false).contains(e.getKey())){
@@ -478,22 +546,29 @@ public class MainController {
 
 			//최소 15tick 후, flag를 0으로 바꿔줌.
 			int policyKeepingTime=0;
-			if (SoSstate > 0)
-				policyKeepingTime = policyList.get(SoSstate-1).getOperation().getSustainTime();
-
-			if ((flagedTime +policyKeepingTime < i && SoSstate == 1) || (flagedTime+policyKeepingTime < i && SoSstate == 2)){
-				SoSstate = 0;
-				flagedTime = 0;
-				priority = Integer.MAX_VALUE;
-				
-				//tlight 정상화
-				for (Entry<String, CS> e: csList.entrySet()){
-					if (getPassingNodes().contains(e.getKey()))
-						continue;
-					e.getValue().updateAllTrafficLight(conn, trafficLightSignal);
-					conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
+			if (SoSstate > 0){
+//				policyKeepingTime = policyList.get(SoSstate-1).getOperation().getSustainTime();
+				policyKeepingTime = nowPolicy.getOperation().getSustainTime();
+//				System.out.println(nowPolicy.getId());
+			}
+			if (nowPolicy != null){
+				if ((flagedTime[policyList.indexOf(nowPolicy)] +policyKeepingTime <= i && SoSstate == 1) || (flagedTime[policyList.indexOf(nowPolicy)] +policyKeepingTime <= i && SoSstate == 2)){
+//					System.out.println("##### " + policyKeepingTime + " @@@ "+flagedTime[policyList.indexOf(nowPolicy)]);
+					SoSstate = 0;
+					for (int j=0; j<flagedTime.length; j++)
+						flagedTime[j] = 0;
+					priority = Integer.MAX_VALUE;
+					nowPolicy = null;
+					
+					//tlight 정상화
+					for (Entry<String, CS> e: csList.entrySet()){
+						if (getPassingNodes().contains(e.getKey()))
+							continue;
+						e.getValue().updateAllTrafficLight(conn, trafficLightSignal);
+						conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
+					}
+					System.out.println("------------------------------------------------Emergency finished");
 				}
-				System.out.println("------------------------------------------------Emergency finished");
 			}
 
 			//monitoring update

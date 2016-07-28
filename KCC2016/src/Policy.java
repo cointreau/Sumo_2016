@@ -66,7 +66,7 @@ public class Policy {
 			
 			list = elem.getElementsByTagName("time");
 			time = Integer.parseInt(((Element)list.item(0)).getTextContent());
-			System.out.println(time);
+//			System.out.println(time);
 		}
 		
 		public String getLocation_target(){

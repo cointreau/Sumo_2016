@@ -40,11 +40,11 @@
 				<number>1</number>			<!-- if the ambulance vehicle appears on all edges, -->
 				<sign>GE</sign>
 			</vehicle>
-			<time>1</time>
+			<time>0</time>
 		</factor>
 
 		<operation>		<!-- order this operation to the traffic lights. -->
-			<location target="follow-all"/>
+			<location target="follow-current3"/>
 			<time>5</time>
 			<light>g</light>
 		</operation>
