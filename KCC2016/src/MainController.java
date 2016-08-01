@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,84 +36,25 @@ public class MainController {
 
 	static String trafficLightSignal[] = {"y", "r", "g"};
 	static int trafficLightUpdateCycle = 0;			// written in normal policy
-	static String mapVersion = "1.2";
+	static int changeToTrafficJamState;
 
 	public static void main(String[] args) throws Exception {
-		String sumo_bin = "C:/Users/WonKyung/git/KCC2016/sumo-0.25.0/bin/sumo-gui.exe";
-		String config = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_sim.cfg";
-		String relEdgesFileDir = "C:/Users/WonKyung/git/KCC2016/DJproject/relatedEdges.txt";
-		//		String trafDirectionFileDir = "C:/Users/WonKyung/git/KCC2016/DJproject/trafficDirection.txt";
-		BufferedReader br = new BufferedReader(new FileReader(new File(relEdgesFileDir)));
-		String policyDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_policy_v1.1.xml";
-
+		
+		//config file read and initiation
+		Config cf = new Config();
+		HashMap<String, CS> csList;
+		
 		int arrivedCar =0;
-		int changeToTrafficJamState = 0;
-		SumoTraciConnection conn = new SumoTraciConnection(sumo_bin, config);
+		SumoTraciConnection conn = new SumoTraciConnection(cf.getSumoBinDir(), cf.getConfigDir());
 		conn.addOption("step-length", "1");
 		conn.runServer();
-
-		//#### initiation of CS-monitoring camera
-		String line = "";
-		HashMap<String, CS> csList = new HashMap<String, CS>();
-		while((line = br.readLine())!=null){
-			String[] split = line.split("\\t");
-			CS cs = new CS(split[0]);
-
-			for (int i=1; i<split.length; i++){
-				cs.addEdge(split[i]);
-				cs.initCamera();
-			}
-			csList.put(cs.getLocation(), cs);
-		}
-		br.close();
-
-		//#### initiation of CS-traffic light -- traffic light에 의해 control되는 link들을 "순서대로" tlight에 집어넣음
-		//순서가 지켜지지 않을 시 tlight가 꼬여서 control하는데 문제가 생김.
-		for (Entry<String, CS> cs: csList.entrySet()){
-			if (getPassingNodes().contains(cs.getKey()))
-				continue;
-			//randomly assign the links of traffic lights
-			SumoLinkList sll = (SumoLinkList)conn.do_job_get(Trafficlights.getControlledLinks(cs.getKey()));
-			for (SumoLink link: sll){
-				String linkname = link.from.substring(0, link.from.length()-2) +"@" + link.to.substring(0, link.to.length()-2);
-				int rand = new Random().nextInt(3);
-				cs.getValue().addTLight(linkname, trafficLightSignal[rand]);
-			}
-			cs.getValue().initTLight();
-		}
-
-
+		
+		// #### CS initiation ####
+		csList = initCSs(cf, conn);
+		
 		// ####### policy initiation ######
-		ArrayList<Policy> policyList = parsingPolicy(policyDir);
-
-		//policy1에 해당하는 edges를 넣는다. 본 list는 policy factor의 location이 edges인 것에 대하여 하나씩 있어야 한다. 
-		// 일단 한개만 있으니까 그대로 하고 추가시 코드 수정 필요..  
-		//		List<String> monitoringEdges = new ArrayList<String>();
-		HashMap<String, List<String>> monitoringEdges = new HashMap<String, List<String>>();
-		boolean ambulancePolicyExist = false;
-		boolean trafficjamPolicyExist = false;
-		for (Policy p: policyList){
-			//policy/factor/location/target=edges 인 경우.
-			if (p.getFactor().getLocation_target().compareTo("edges")==0){
-				List<String> tempEdgesList = new ArrayList<String>();
-				for (String edg: p.getFactor().getEdges()){
-					tempEdgesList.add(edg);
-				}
-				monitoringEdges.put(p.getId(), tempEdgesList);
-			}
-			if (p.getId().contains("traffic_jam")){
-				changeToTrafficJamState = p.getFactor().getVehicle_number();
-			}
-			//policy에 ambulance 관련된 것이 있는지 우선 체크함
-			if (p.getId().toLowerCase().contains("ambulance")){
-				ambulancePolicyExist = true;
-			}
-			if (p.getId().toLowerCase().contains("traffic_jam")){
-				trafficjamPolicyExist = true;
-			}
-
-			//policy에 trafficJam 관련된 것이 있는지 우선 체크함
-		}
+		ArrayList<Policy> policyList = parsingPolicy(cf.getPolicyDir());
+		HashMap<String, List<String>> monitoringEdges = initPolicies(policyList);
 
 
 		conn.do_job_set(Vehicle.add("init", "car", "rush1", 0, 0, 13.8, (byte) 0));
@@ -140,6 +82,10 @@ public class MainController {
 		int priority = Integer.MAX_VALUE;
 		Policy nowPolicy = null;
 		
+		
+		
+		
+		
 		// #### 시뮬레이션 시작.
 		for (int i=0; i<3600; i++){
 
@@ -164,7 +110,7 @@ public class MainController {
 				for (int j=0; j<5; j++)
 					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr3", simtime, 0, 0.0, (byte) 0));
 			}
-			else if (randNum >= 499 && randNum <500 && ambulancePolicyExist){
+			else if (randNum >= 499 && randNum <500 /*&& ambulancePolicyExist*/){
 				conn.do_job_set(Vehicle.add("ambul"+vehicleIdx, "ambulance", "ambul1", simtime, 0, 0.0, (byte) 0));
 				vehicleIdx++;
 			}
@@ -205,7 +151,7 @@ public class MainController {
 			//=============================================== policy2 ambulance ========================================================			
 			//ambulance가 나타났는지 체크함(factor에 비교하여 체크함)
 			List<String> vehicles = (List<String>) conn.do_job_get(Vehicle.getIDList());
-			if (SoSstate != 2 /*&& SoSstate != -2*/ && ambulancePolicyExist){ 
+			if (SoSstate != 2 /*&& SoSstate != -2*/ /*&& ambulancePolicyExist*/){ 
 
 				//policyList에서 ambulance에 해당하는 policy을 뽑아옴
 				Policy ambulPolicy=null;
@@ -427,7 +373,7 @@ public class MainController {
 			//=============================================== policy 1 -- traffic jam========================================================
 
 			//policy1의 적용. 우선순위가 가장 낮으므로 어떠한 상황도 아닌 normal 상황에서만 발동하게 된다
-			if (SoSstate!=1 /*&& SoSstate!=-1*/ && trafficjamPolicyExist){		//SoS 상황 설정 -- 해당 차로에 x대가 넘는 차량이 몰려있을 경우를 SoS 상황으로 설정함.
+			if (SoSstate!=1 /*&& SoSstate!=-1*/ /*&& trafficjamPolicyExist*/){		//SoS 상황 설정 -- 해당 차로에 x대가 넘는 차량이 몰려있을 경우를 SoS 상황으로 설정함.
 				//일단 traffic jam에 해당하는 policy을 가져옴.
 				Policy jamPolicy=null;
 				for (Policy p: policyList){
@@ -604,6 +550,86 @@ public class MainController {
 	}
 
 
+	//Policy initiation
+	private static HashMap<String, List<String>> initPolicies(ArrayList<Policy> policyList) {
+		//policy에 해당하는 edges를 넣는다. 본 list는 policy factor의 location이 edges인 것에 대하여 하나씩 있어야 한다. 
+		HashMap<String, List<String>> monitoringEdges = new HashMap<String, List<String>>();
+		boolean ambulancePolicyExist = false;
+		boolean trafficjamPolicyExist = false;
+		for (Policy p: policyList){
+			//policy/factor/location/target=edges 인 경우.
+			if (p.getFactor().getLocation_target().compareTo("edges")==0){
+				List<String> tempEdgesList = new ArrayList<String>();
+				for (String edg: p.getFactor().getEdges()){
+					tempEdgesList.add(edg);
+				}
+				monitoringEdges.put(p.getId(), tempEdgesList);
+			}
+			if (p.getId().contains("traffic_jam")){
+				changeToTrafficJamState = p.getFactor().getVehicle_number();
+			}
+			//policy에 ambulance 관련된 것이 있는지 우선 체크함
+			if (p.getId().toLowerCase().contains("ambulance")){
+				ambulancePolicyExist = true;
+			}
+			if (p.getId().toLowerCase().contains("traffic_jam")){
+				trafficjamPolicyExist = true;
+			}
+			
+		}
+		
+		return monitoringEdges;
+	}
+
+	//CS(Camera, traffic light) initiation
+	private static HashMap<String, CS> initCSs(Config cf, SumoTraciConnection conn) {
+		// TODO Auto-generated method stub
+		HashMap<String, CS> csList = new HashMap<String, CS>();
+		BufferedReader br;
+		//#### initiation of CS-monitoring camera
+		String line = "";
+		
+		try {
+			br = new BufferedReader(new FileReader(new File(cf.getRelEdgesFileDir())));
+			while((line = br.readLine())!=null){
+				String[] split = line.split("\\t");
+				CS cs = new CS(split[0]);
+
+				for (int i=1; i<split.length; i++){
+					cs.addEdge(split[i]);
+					cs.initCamera();
+				}
+				csList.put(cs.getLocation(), cs);
+			}
+			br.close();
+			
+			//#### initiation of CS-traffic light -- traffic light에 의해 control되는 link들을 "순서대로" tlight에 집어넣음
+			//순서가 지켜지지 않을 시 tlight가 꼬여서 control하는데 문제가 생김.
+			for (Entry<String, CS> cs: csList.entrySet()){
+				if (getPassingNodes().contains(cs.getKey()))
+					continue;
+				//randomly assign the links of traffic lights
+				SumoLinkList sll = (SumoLinkList)conn.do_job_get(Trafficlights.getControlledLinks(cs.getKey()));
+				for (SumoLink link: sll){
+					String linkname = link.from.substring(0, link.from.length()-2) +"@" + link.to.substring(0, link.to.length()-2);
+					int rand = new Random().nextInt(3);
+					cs.getValue().addTLight(linkname, trafficLightSignal[rand]);
+				}
+				cs.getValue().initTLight();
+			}
+
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return csList;
+	}
+
 	private static ArrayList<Policy> parsingPolicy(String policyDir) {
 		// TODO Auto-generated method stub
 		ArrayList<Policy> policyList = null;
@@ -633,7 +659,8 @@ public class MainController {
 
 	//route가 포함하는 노드를 받아옴. 시작 노드와 end 노드는 제외됨.
 	private static ArrayList<String> getNodesFromRoutes(List<String> routes, Boolean removeFinalNodes){
-		String edgeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v"+mapVersion+".edg.xml";
+		Config cf = new Config();
+		String edgeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v"+cf.getMapVersion()+".edg.xml";
 		ArrayList<String> nodes = new ArrayList<String>();
 
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -664,7 +691,8 @@ public class MainController {
 	}
 
 	private static ArrayList<String> getPassingNodes(){
-		String nodeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v"+mapVersion+".nod.xml";
+		Config cf = new Config();
+		String nodeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v"+cf.getMapVersion()+".nod.xml";
 		ArrayList<String> nodes = new ArrayList<String>();
 
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -690,7 +718,8 @@ public class MainController {
 
 	//Edge명을 받았을 때 edge의 방향(to)를 return 하는 메소드.
 	private static String getToOfEdge(String edge){
-		String edgeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v"+mapVersion+".edg.xml";
+		Config cf = new Config();
+		String edgeDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_v"+cf.getMapVersion()+".edg.xml";
 
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 		DocumentBuilder db;
