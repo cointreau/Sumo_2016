@@ -37,37 +37,27 @@ public class MainController {
 	static String trafficLightSignal[] = {"y", "r", "g"};
 	static int trafficLightUpdateCycle = 0;			// written in normal policy
 	static int changeToTrafficJamState;
+	static SumoTraciConnection conn;
 
 	public static void main(String[] args) throws Exception {
-		
+
 		//config file read and initiation
 		Config cf = new Config();
 		HashMap<String, CS> csList;
-		
+
 		int arrivedCar =0;
-		SumoTraciConnection conn = new SumoTraciConnection(cf.getSumoBinDir(), cf.getConfigDir());
+		conn = new SumoTraciConnection(cf.getSumoBinDir(), cf.getConfigDir());
 		conn.addOption("step-length", "1");
 		conn.runServer();
-		
+
 		// #### CS initiation ####
 		csList = initCSs(cf, conn);
-		
+
 		// ####### policy initiation ######
 		ArrayList<Policy> policyList = parsingPolicy(cf.getPolicyDir());
 		HashMap<String, List<String>> monitoringEdges = initPolicies(policyList);
 
-
-		conn.do_job_set(Vehicle.add("init", "car", "rush1", 0, 0, 13.8, (byte) 0));
-
-		// #### assign traffic light initially
-		for (Entry<String, CS> e: csList.entrySet()){
-			if (getPassingNodes().contains(e.getKey()))
-				continue;
-
-			conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
-		}
-
-
+		// ######## variable initiation needed for simulation before simulation #########
 		int SoSstate = 0;			// 0-- normal state, minus number-- SoS state before control, plus number -- SoS state after control
 		int[] flagedTime = new int[policyList.size()];			// state 가 sos로 바뀐 시점을 감지하여 저장, flag의 인덱스는 policyList의 인덱스 순서와 동일.
 
@@ -81,40 +71,14 @@ public class MainController {
 		//현재의 priority를 기억한다.. 임의의 priority 숫자(가장 높은 숫자)
 		int priority = Integer.MAX_VALUE;
 		Policy nowPolicy = null;
-		
-		
-		
-		
-		
-		// #### 시뮬레이션 시작.
+
+
+
+		// #### simulation start ####
 		for (int i=0; i<3600; i++){
 
-			int simtime;
-			simtime = (int) conn.do_job_get(Simulation.getCurrentTime());
-
-			//차 랜덤생성(확률)
-			int randNum = (int)(Math.random() * 500);
-			if (randNum < 350){
-				for (int j=0; j<10; j++)
-					conn.do_job_set(Vehicle.add("rush1"+vehicleIdx++, "car", "rush1", simtime, 0, 0.0, (byte) 0));
-			}
-			else if (randNum >= 350 && randNum <400){
-				for (int j=0; j<5; j++)
-					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr1", simtime, 0, 0.0, (byte) 0));
-			}
-			else if (randNum >= 400 && randNum <450){
-				for (int j=0; j<5; j++)
-					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr2", simtime, 0, 0.0, (byte) 0));
-			}
-			else if (randNum >= 450 && randNum <499){
-				for (int j=0; j<5; j++)
-					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr3", simtime, 0, 0.0, (byte) 0));
-			}
-			else if (randNum >= 499 && randNum <500 /*&& ambulancePolicyExist*/){
-				conn.do_job_set(Vehicle.add("ambul"+vehicleIdx, "ambulance", "ambul1", simtime, 0, 0.0, (byte) 0));
-				vehicleIdx++;
-			}
-
+			int simtime = (int) conn.do_job_get(Simulation.getCurrentTime());
+			vehicleIdx = generateCar(vehicleIdx, simtime);
 
 			//=============================================== normal policy ========================================================
 			//traffic light 주기적 업데이트. normal state.
@@ -180,7 +144,7 @@ public class MainController {
 					case "GE": 
 						if (ambulances.size()>=ambulPolicy.getFactor().getVehicle_number()){
 							SoSstate = -2;
-//							priority = ambulPolicy.getPriority();
+							//							priority = ambulPolicy.getPriority();
 						}
 						else{
 							flagedTime[policyList.indexOf(ambulPolicy)] = 0;
@@ -191,7 +155,7 @@ public class MainController {
 					case "E":
 						if (ambulances.size()==ambulPolicy.getFactor().getVehicle_number()){
 							SoSstate = -2;
-//							priority = ambulPolicy.getPriority();
+							//							priority = ambulPolicy.getPriority();
 						}
 						else{
 							flagedTime[policyList.indexOf(ambulPolicy)] = 0;
@@ -202,7 +166,7 @@ public class MainController {
 					case "G":
 						if (ambulances.size()>ambulPolicy.getFactor().getVehicle_number()){
 							SoSstate = -2;
-//							priority = ambulPolicy.getPriority();
+							//							priority = ambulPolicy.getPriority();
 						}
 						else{
 							flagedTime[policyList.indexOf(ambulPolicy)] = 0;
@@ -213,7 +177,7 @@ public class MainController {
 					case "LE":
 						if (ambulances.size()<=ambulPolicy.getFactor().getVehicle_number()){
 							SoSstate = -2;
-//							priority = ambulPolicy.getPriority();
+							//							priority = ambulPolicy.getPriority();
 						}
 						else{
 							flagedTime[policyList.indexOf(ambulPolicy)] = 0;
@@ -224,7 +188,7 @@ public class MainController {
 					case "L":
 						if (ambulances.size()<ambulPolicy.getFactor().getVehicle_number()){
 							SoSstate = -2;
-//							priority = ambulPolicy.getPriority();
+							//							priority = ambulPolicy.getPriority();
 						}
 						else{
 							flagedTime[policyList.indexOf(ambulPolicy)] = 0;
@@ -235,7 +199,7 @@ public class MainController {
 					default:
 						if (ambulances.size()>=ambulPolicy.getFactor().getVehicle_number()){
 							SoSstate = -2;
-//							priority = ambulPolicy.getPriority();
+							//							priority = ambulPolicy.getPriority();
 						}
 						else{
 							flagedTime[policyList.indexOf(ambulPolicy)] = 0;
@@ -260,7 +224,7 @@ public class MainController {
 						break;
 					}
 				}
-				
+
 				//time을 넘어섰는지 확인 후 SoSstate를 변경한다.
 				if (flagedTime[index] == 0)
 					flagedTime[index] = i;
@@ -333,7 +297,7 @@ public class MainController {
 							//이미 현재 앰뷸런스의 위치가 ambul route상에서 지나간 edge라면 아래의 동작을 수행하지 않고 continue하게 함.
 							if (ambulanceRouteNodes.contains(e.getKey()) && ambulanceRouteNodes.indexOf(locationAmbulanceTo) > ambulanceRouteNodes.indexOf(e.getKey()))
 								continue;
-							
+
 							if (ambulanceRouteNodes.contains(e.getKey()))
 								e.getValue().updateAllTrafficLightToRed(conn);
 
@@ -346,7 +310,7 @@ public class MainController {
 								conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
 							}
 						}
-						
+
 						//edges일 경우의 수행.
 						else if (ambulPolicy.getOperation().getLocation_target().contains("edges")){
 							//일단 traffic jam에 해당하는 policy을 가져옴.
@@ -448,7 +412,7 @@ public class MainController {
 						break;
 					}
 				}
-				
+
 			}
 
 			System.out.println((simtime/1000)+" tick / "+nCar.get("emergency_by_traffic_jam") +" cars on the monitored road now in state = " + SoSstate);
@@ -464,7 +428,7 @@ public class MainController {
 						break;
 					}
 				}
-				
+
 				if (flagedTime[policyList.indexOf(jamPolicy)] == 0)
 					flagedTime[policyList.indexOf(jamPolicy)] = i;
 				else if (flagedTime[policyList.indexOf(jamPolicy)] != 0 && i>=flagedTime[policyList.indexOf(jamPolicy)] + jamPolicy.getFactor().getTime()-1){
@@ -474,7 +438,7 @@ public class MainController {
 					System.out.println("-----------------------------------------------SOS!!!!");
 				}
 			}
-			
+
 			if (SoSstate == 1){
 				for (Entry<String, CS> e: csList.entrySet()){
 					if (getPassingNodes().contains(e.getKey()))
@@ -493,14 +457,14 @@ public class MainController {
 					//해당 길목(rush1)에 해당하는 신호등들의 신호만 g로 바꿈. 이부분 코드 수정 필요? rush1에 해당하는 노드를 하드 코딩 말고 뭔가 다른 방법으로 알아내어야 함
 					if (getNodesFromRoutes(jamPolicy.getOperation().getEdges(), false).contains(e.getKey())){
 						e.getValue().updateAllTrafficLightToRed(conn);
-						
+
 						for (String tl: jamPolicy.getOperation().getEdges()){
 							for (TLight t: e.getValue().gettlightMap()){
 								if (t.getKey().startsWith(tl)){		//만약 이 edge 명으로 시작하면,
 									e.getValue().updateTrafficLight(conn, t.getKey(), jamPolicy.getOperation().getLight());		//해당 edge에서 빠져나가는 노드는 모두 g로 바꾸어줌.
 								}
 							}
-//							System.out.println("??????????"+SoSstate);
+							//							System.out.println("??????????"+SoSstate);
 							conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
 						}
 					}
@@ -510,19 +474,19 @@ public class MainController {
 			//최소 15tick 후, flag를 0으로 바꿔줌.
 			int policyKeepingTime=0;
 			if (SoSstate > 0){
-//				policyKeepingTime = policyList.get(SoSstate-1).getOperation().getSustainTime();
+				//				policyKeepingTime = policyList.get(SoSstate-1).getOperation().getSustainTime();
 				policyKeepingTime = nowPolicy.getOperation().getSustainTime();
-//				System.out.println(nowPolicy.getId());
+				//				System.out.println(nowPolicy.getId());
 			}
 			if (nowPolicy != null){
 				if ((flagedTime[policyList.indexOf(nowPolicy)] +policyKeepingTime <= i && SoSstate == 1) || (flagedTime[policyList.indexOf(nowPolicy)] +policyKeepingTime <= i && SoSstate == 2)){
-//					System.out.println("##### " + policyKeepingTime + " @@@ "+flagedTime[policyList.indexOf(nowPolicy)]);
+					//					System.out.println("##### " + policyKeepingTime + " @@@ "+flagedTime[policyList.indexOf(nowPolicy)]);
 					SoSstate = 0;
 					for (int j=0; j<flagedTime.length; j++)
 						flagedTime[j] = 0;
 					priority = Integer.MAX_VALUE;
 					nowPolicy = null;
-					
+
 					//tlight 정상화
 					for (Entry<String, CS> e: csList.entrySet()){
 						if (getPassingNodes().contains(e.getKey()))
@@ -547,6 +511,39 @@ public class MainController {
 		System.out.println("# Arrived car is " + arrivedCar);
 
 		conn.close();
+	}
+
+
+	private static int generateCar(int vehicleIdx, int simtime) {
+
+		//차 랜덤생성(확률)
+		int randNum = (int)(Math.random() * 500);
+		try{
+			if (randNum < 350){
+				for (int j=0; j<10; j++)
+					conn.do_job_set(Vehicle.add("rush1"+vehicleIdx++, "car", "rush1", simtime, 0, 0.0, (byte) 0));
+			}
+			else if (randNum >= 350 && randNum <400){
+				for (int j=0; j<5; j++)
+					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr1", simtime, 0, 0.0, (byte) 0));
+			}
+			else if (randNum >= 400 && randNum <450){
+				for (int j=0; j<5; j++)
+					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr2", simtime, 0, 0.0, (byte) 0));
+			}
+			else if (randNum >= 450 && randNum <499){
+				for (int j=0; j<5; j++)
+					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr3", simtime, 0, 0.0, (byte) 0));
+			}
+			else if (randNum >= 499 && randNum <500 /*&& ambulancePolicyExist*/){
+				conn.do_job_set(Vehicle.add("ambul"+vehicleIdx, "ambulance", "ambul1", simtime, 0, 0.0, (byte) 0));
+				vehicleIdx++;
+			}
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+
+		return vehicleIdx;
 	}
 
 
@@ -575,9 +572,9 @@ public class MainController {
 			if (p.getId().toLowerCase().contains("traffic_jam")){
 				trafficjamPolicyExist = true;
 			}
-			
+
 		}
-		
+
 		return monitoringEdges;
 	}
 
@@ -588,7 +585,7 @@ public class MainController {
 		BufferedReader br;
 		//#### initiation of CS-monitoring camera
 		String line = "";
-		
+
 		try {
 			br = new BufferedReader(new FileReader(new File(cf.getRelEdgesFileDir())));
 			while((line = br.readLine())!=null){
@@ -602,7 +599,7 @@ public class MainController {
 				csList.put(cs.getLocation(), cs);
 			}
 			br.close();
-			
+
 			//#### initiation of CS-traffic light -- traffic light에 의해 control되는 link들을 "순서대로" tlight에 집어넣음
 			//순서가 지켜지지 않을 시 tlight가 꼬여서 control하는데 문제가 생김.
 			for (Entry<String, CS> cs: csList.entrySet()){
@@ -618,7 +615,14 @@ public class MainController {
 				cs.getValue().initTLight();
 			}
 
-			
+			// #### assign traffic light initially
+			for (Entry<String, CS> e: csList.entrySet()){
+				if (getPassingNodes().contains(e.getKey()))
+					continue;
+
+				conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
+			}
+
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -626,7 +630,7 @@ public class MainController {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		return csList;
 	}
 
