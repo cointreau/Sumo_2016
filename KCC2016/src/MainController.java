@@ -55,7 +55,7 @@ public class MainController {
 
 		// ####### policy initiation ######
 		ArrayList<Policy> policyList = parsingPolicy(cf.getPolicyDir());
-		HashMap<String, List<String>> monitoringEdges = initPolicies(policyList);
+		HashMap<String, List<String>> monitoringEdges = initPolicies(policyList);			//<Policy Id, edges>
 
 		// ######## variable initiation needed for simulation before simulation #########
 		int SoSstate = 0;			// 0-- normal state, minus number-- SoS state before control, plus number -- SoS state after control
