@@ -546,7 +546,7 @@ public class MainController {
 		return vehicleIdx;
 	}
 
-
+ 
 	//Policy initiation
 	private static HashMap<String, List<String>> initPolicies(ArrayList<Policy> policyList) {
 		//policy에 해당하는 edges를 넣는다. 본 list는 policy factor의 location이 edges인 것에 대하여 하나씩 있어야 한다. 
