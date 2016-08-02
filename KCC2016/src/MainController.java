@@ -110,7 +110,7 @@ public class MainController {
 				if (factorSatisfied){
 					
 				}
-				else{			// or not satisfied.
+				else{			// or not satisfied..
 					
 				}
 			}
