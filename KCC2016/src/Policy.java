@@ -115,10 +115,18 @@ public class Policy {
 				for (int i=0; i<enl.getLength(); i++){
 					edges.add(enl.item(i).getTextContent());
 				}
-			}//follow일 경우의 처리
+			}
+			//all 일 경우의 처리.
+			else if (target.compareTo("all")==0){
+				location_target = target;
+			}
+			//follow일 경우의 처리
 			else if (target.compareTo("follow-all")==0){
 				location_target = target;
 				location_edges = "";
+				if (getFactor().getVehicle_target().compareTo("all")==0){		//만약 target이 specific하지 않으면, 그냥 all이랑 똑같이 함.
+					location_target = "all";
+				}
 			}
 			
 			//follow-current, follow-current(숫자)가 존재할 수 있음.
@@ -132,6 +140,9 @@ public class Policy {
 					followCurrentEdgesNumber = Integer.parseInt(m.group());
 				else
 					followCurrentEdgesNumber = 1;		//없으면 그냥 current나 동일함. follow-current는 follow-current1과 동일.
+				if (getFactor().getVehicle_target().compareTo("all")==0){		//만약 target이 specific하지 않으면, 그냥 all이랑 똑같이 함.
+					location_target = "all";
+				}
 			}
 			
 			//time 노드 파싱

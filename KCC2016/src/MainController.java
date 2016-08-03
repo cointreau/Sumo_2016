@@ -58,23 +58,28 @@ public class MainController {
 		ArrayList<Policy> policyList = parsingPolicy(cf.getPolicyDir());
 		HashMap<String, List<String>> monitoringEdges = initPolicies(policyList);			//<Policy Id, edges>
 		ArrayList<String> pidOrderByPriority = orderPidPriority(policyList);			//낮은 priority --> 높은 priority 순으로 정렬된 policy id를 가지고 있는 리스트.
+		int vehicleIdx = 0;				// generate하는 차량의 id를 구분하기 위한 숫자.
+
+		HashMap<String, Timeflag> flagTime = new HashMap<String, Timeflag>();			//time flag의 map을 policy 개수만큼 만듬.
+		for (Policy p: policyList) flagTime.put(p.getId(), new Timeflag(p.getId(), p.getPriority()));
 
 		// ######## variable initiation needed for simulation before simulation #########
-		int SoSstate = 0;			// 0-- normal state, minus number-- SoS state before control, plus number -- SoS state after control
+		/*int SoSstate = 0;			// 0-- normal state, minus number-- SoS state before control, plus number -- SoS state after control
 		int[] flagedTime = new int[policyList.size()];			// state 가 sos로 바뀐 시점을 감지하여 저장, flag의 인덱스는 policyList의 인덱스 순서와 동일.
-
+		 */
 		/*		//ambulance를 위한 변수들
 		List<String> ambulanceRoute = null;
 		HashMap<String, List<String>> ambulances = new HashMap<String, List<String>>();
 		 */
 		//vehicle의 수를 i보다 더 늘리기 위한 숫자.
-		int vehicleIdx = 0;
+
 
 		/*		//현재의 priority를 기억한다.. 임의의 priority 숫자(가장 높은 숫자)
 		int priority = Integer.MAX_VALUE;
 		Policy nowPolicy = null;
 
 		 */
+		//		conn.do_job_set(Vehicle.add("", "car", "rush1", 0, 0, 0.0, (byte) 0));
 
 		// #### simulation start ####
 		for (int i=0; i<3600; i++){
@@ -105,23 +110,66 @@ public class MainController {
 				//checking the pol's factor is satisfied.
 				boolean factorSatisfied = factorCheck(pol, monitoringEdges, csList);			// if factor is satisfied, change to true.
 				System.out.println((simtime/1000) + " tick / " + pid + "\t" + factorSatisfied);
-				
+
 				// do operation if pol's factor is satisfied.
-				if (factorSatisfied){
-					
+				if (!factorSatisfied){			// not satisfied.
+
 				}
-				else{			// or not satisfied..
-					
+				else{			// satisfied..
+					Timeflag flag = flagTime.get(pol.getId());			//get the timeflag of now policy
+					if (flag.getState().compareTo("none")==0){			
+						/* if the state is none.. 
+						 * start monitoring.
+						 */
+						System.out.println("monitoring start");
+						flag.setState("monitor");
+						flag.setstartTime(i);
+						flag.setleftTime(pol.getOperation().getSustainTime());
+					}
+					else if (flag.getState().compareTo("monitor")==0 && flag.getLeftTime() != 0){			
+						/* if the state is monitor and still has lefttime, 
+						 * keep monitoring.
+						 */ 
+						flag.setleftTime(flag.getLeftTime()-1);
+						System.out.println(flag.getLeftTime());
+					}
+					else if (flag.getState().compareTo("monitor")==0 && flag.getLeftTime() == 0){			
+						/* if the state is monitor and lefttime is over,
+						 * start operation.
+						 */ 
+
+						//operation 을 하게끔 함.
+						System.out.println("operation start.");
+						csList = doOperation(pol, csList);
+						//flag 수정.
+					}
+					else if (flag.getState().compareTo("applied")==0 && flag.getLeftTime() != 0){			
+						/* if the state is applied and still has lefttime,
+						 * keep operation.
+						 */ 
+						flag.setleftTime(flag.getLeftTime()-1);
+					}
+					else if (flag.getState().compareTo("applied")==0 && flag.getLeftTime() == 0){			
+						/* if the state is applied and lefttime is over,
+						 * return to none state.
+						 */ 
+						flag.setState("none");
+						flag.setstartTime(-1);
+						flag.setleftTime(-1);
+					}
+
+					//after all, update the flagTime with this modified flag.
+					flagTime.put(pol.getId(), flag);
 				}
 			}
 
 
-			
+
 			//monitoring camera update
 			for (Entry<String, CS> c: csList.entrySet()){
 				c.getValue().updateCamera(conn);
 			}
-			
+
 			// do operation according to each CS's determined value just before. 
 			for (Entry<String, CS> e: csList.entrySet()){
 				if (getPassingNodes().contains(e.getKey()))
@@ -134,6 +182,170 @@ public class MainController {
 		System.out.println("# Arrived car is " + arrivedCar);
 
 		conn.close();
+	}
+
+	private static HashMap<String, CS> doOperation(Policy pol, HashMap<String, CS> csList) {
+		//location을 일단 한정해야 함.
+		HashMap<String, CS> targetCSs = new HashMap<String, CS>();
+		List<ArrayList<String>> targetEdges = new ArrayList<ArrayList<String>>();
+		if (pol.getOperation().getLocation_target().compareTo("all")==0){
+			//모든 CS가 대상이므로 그냥 카피.
+			for (Entry<String, CS> cs: csList.entrySet())	targetCSs.put(cs.getKey(), cs.getValue());
+		}
+		else if (pol.getOperation().getLocation_target().compareTo("edges")==0){
+			//edges에 구성된 CS들로만 한정.
+			for (String edge: pol.getOperation().getEdges()){
+				String nodeName = getToOfEdge(edge);
+				targetCSs.put(nodeName, csList.get(nodeName));
+			}
+			ArrayList<String> tmpedges = new ArrayList<String>();
+			for (String eg: pol.getOperation().getEdges())	tmpedges.add(eg);
+			targetEdges.add(tmpedges);
+		}
+		else if (pol.getOperation().getLocation_target().compareTo("follow-all")==0){
+			//pol의 location_target의 route 정보를 가져와야함. 이 때 앰뷸런스의 루트가 각각 다를 경우를 고려해야 함.
+			//앰뷸런스가 나타나야지만 이 조건이 발동되므로, vehicle에서 ambulance의 id를 모두 찾아와서 하는 것이 좋을 듯 함.
+			HashMap<String, ArrayList<String>> ambulances = new HashMap<String, ArrayList<String>>();
+			try {
+				//ambulance들의 루트에 해당되는 노드들을 가져옴.
+				List<String> vehicles = (List<String>)conn.do_job_get(Vehicle.getIDList());
+				for (String vid: vehicles){
+					if (vid.startsWith("ambulance")){
+						//current와 비교하여 남은 노드들만을 추가해야함. 그러므로 routeAmbl에서 지나간 노드들은 다 빼버려야 함.
+						List<String> routeAmbl = (List<String>) conn.do_job_get(Vehicle.getRoute(vid));
+						targetEdges.add(new ArrayList<String>(routeAmbl));
+						String locationAmbulance = (String)conn.do_job_get(Vehicle.getRoadID(vid));		//현재의 location, 
+						if (locationAmbulance.contains("_")){
+							// 현재 위치가 junction으로 잡히는 경우임. 이 경우엔 _뒤에 있는 것을 떼버리고, 
+							locationAmbulance = locationAmbulance.substring(1, locationAmbulance.indexOf("_"));
+							//해당 노드의 edgeList중에, 앰뷸런스와 겹치는 엣지를 넣어놓움
+							for (String edge: csList.get(locationAmbulance).getEdgeList()){
+								if (routeAmbl.contains(edge)){
+									locationAmbulance = edge;
+									break;
+								}
+							}
+						}
+
+						for (int i=0; i<routeAmbl.indexOf(locationAmbulance); i++){		//지나간 노드의 제거
+							routeAmbl.remove(i);
+						}
+
+						ambulances.put(vid, getNodesFromRoutes(routeAmbl, true));
+					}
+				}
+
+				// 가져온 노드들을 찾아서 csList에서 찾아서 넣어둠.
+				for (Entry<String, ArrayList<String>> ent: ambulances.entrySet()){
+					for (String node: ent.getValue()){
+						targetCSs.put(node, csList.get(node));
+					}
+				}
+				// 엣지들도 같이 넣어놓음.
+
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		else if (pol.getOperation().getLocation_target().contains("follow-current")){
+			//ambulance들의 루트에 해당되는 노드들을 가져오고, current의 숫자만큼을 또 추가로 넣어두어야함.
+			HashMap<String, ArrayList<String>> ambulances = new HashMap<String, ArrayList<String>>();
+			try {
+				//ambulance들의 루트에 해당되는 노드들을 가져옴.
+				List<String> vehicles = (List<String>)conn.do_job_get(Vehicle.getIDList());
+				for (String vid: vehicles){
+					if (vid.startsWith("ambulance")){
+						//current와 비교하여 남은 노드들만을 추가해야함. 그러므로 routeAmbl에서 지나간 노드들은 다 빼버려야 함.
+						List<String> routeAmbl = (List<String>) conn.do_job_get(Vehicle.getRoute(vid));
+						targetEdges.add(new ArrayList<String>(routeAmbl));
+						String locationAmbulance = (String)conn.do_job_get(Vehicle.getRoadID(vid));		//현재의 location, 
+						if (locationAmbulance.contains("_")){
+							// 현재 위치가 junction으로 잡히는 경우임. 이 경우엔 _뒤에 있는 것을 떼버리고, 
+							locationAmbulance = locationAmbulance.substring(1, locationAmbulance.indexOf("_"));
+							//해당 노드의 edgeList중에, 앰뷸런스와 겹치는 엣지를 넣어놓움
+							for (String edge: csList.get(locationAmbulance).getEdgeList()){
+								if (routeAmbl.contains(edge)){
+									locationAmbulance = edge;
+									break;
+								}
+							}
+						}
+
+						for (int i=0; i<routeAmbl.indexOf(locationAmbulance); i++){		//지나간 노드도 제거하고
+							routeAmbl.remove(i);
+						}
+						List<String> leftovers = new ArrayList<String>();
+						//제거된데서, 딱 n개까지만 남겨놓아야함.
+						for (int i=0; i<=pol.getOperation().getFollowCurrentEdgesNumber(); i++){
+							leftovers.add(routeAmbl.get(i));
+						}
+
+						ambulances.put(vid, getNodesFromRoutes(leftovers, true));
+					}
+				}
+				// 가져온 노드들을 찾아서 csList에서 찾아서 넣어둠.
+				for (Entry<String, ArrayList<String>> ent: ambulances.entrySet()){
+					for (String node: ent.getValue()){
+						targetCSs.put(node, csList.get(node));
+					}
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		//주어진 location에 operation을 적용한다. 만약 null일 경우 return하게 하며, passing nodes일 경우에는 pass하게 한다.
+		if (targetCSs.isEmpty())
+			return csList;
+
+		try{
+			for (Entry<String, CS> target: targetCSs.entrySet()){
+				if (getPassingNodes().contains(target.getKey()))
+					continue;
+
+				// CS 단위의 처리
+				if (pol.getOperation().getLocation_target().compareTo("all")==0){
+					for (Entry<String, CS> cs: csList.entrySet()){
+						for (TLight t: cs.getValue().gettlightMap()){
+							cs.getValue().updateTrafficLight(conn, t.getKey(), pol.getOperation().getLight());
+						}
+					}
+				}
+
+				//edge 단위의 처리
+				else{
+					for (String edges: target.getValue().getEdgeList()){			//target CS의 모든 엣지들에 대해
+						//targetEdges에 포함된 곳이 있는지 체크
+						boolean targetHasThisEdge = false;
+						for (ArrayList<String> targetEdgesElm: targetEdges){
+							if (targetEdgesElm.contains(edges)){		targetHasThisEdge=true;	break;}
+						}
+						if (targetHasThisEdge && getToOfEdge(edges).compareTo(target.getKey())==0){		//만약 이 엣지가 target에 포함된 엣지이며 나가는 엣지라면
+							for (TLight t: target.getValue().gettlightMap()){
+								if (t.getKey().startsWith(edges)){
+									target.getValue().updateTrafficLight(conn, t.getKey(), pol.getOperation().getLight());
+								}
+								else{
+									if (pol.getOperation().getLight().compareTo("g")==0)	target.getValue().updateTrafficLight(conn, t.getKey(), "r");
+									else if (pol.getOperation().getLight().compareTo("r")==0)	target.getValue().updateTrafficLight(conn, t.getKey(), "g");
+								}
+							}
+						}
+					}
+				}
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		
+		//csList에 업데이트 해야함.
+		for (Entry<String, CS> target: targetCSs.entrySet()){
+			csList.put(target.getKey(), target.getValue());
+		}
+		
+		return csList;
 	}
 
 	// return true if factor of this policy (named pol) is satisfied.
@@ -164,11 +376,11 @@ public class MainController {
 							ambulances.add(str);
 						}
 					}
-					
+
 					satisfied = switchBySign(pol, ambulances.size());
 				}
 			}
-			
+
 			else if (pol.getFactor().getLocation_target().compareToIgnoreCase("edges")==0){
 				List<String> edges = monitoringEdges.get(pol.getId());
 				if (pol.getFactor().getVehicle_target().compareToIgnoreCase("all")==0){
@@ -198,7 +410,7 @@ public class MainController {
 							}
 						}
 					}
-					
+
 					// determine if the number of ambulances on these edges is over N.
 					satisfied = switchBySign(pol, number);
 				}
@@ -312,10 +524,10 @@ public class MainController {
 				for (int j=0; j<5; j++)
 					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr3", simtime, 0, 0.0, (byte) 0));
 			}
-			else if (randNum >= 499 && randNum <500 /*&& ambulancePolicyExist*/){
+/*			else if (randNum >= 0 && randNum <500 && ambulancePolicyExist){
 				conn.do_job_set(Vehicle.add("ambulance"+vehicleIdx, "ambulance", "ambul1", simtime, 0, 0.0, (byte) 0));
 				vehicleIdx++;
-			}
+			}*/
 		}catch (Exception e){
 			e.printStackTrace();
 		}
@@ -349,7 +561,6 @@ public class MainController {
 
 	//CS(Camera, traffic light) initiation
 	private static HashMap<String, CS> initCSs(Config cf, SumoTraciConnection conn) {
-		// TODO Auto-generated method stub
 		HashMap<String, CS> csList = new HashMap<String, CS>();
 		BufferedReader br;
 		//#### initiation of CS-monitoring camera
