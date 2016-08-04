@@ -12,12 +12,15 @@ import de.tudresden.sumo.cmd.Lane;
 
 
 public class CS {
+	private String trafficLightSignal[] = {"y", "r", "g"};
 	private String location;		//located node id, same as id
 	private ArrayList<String> edgeList;
 	private HashMap<String, Integer> camera;
 	//LinkedHashMap<String, String> tlightMap;
 	private ArrayList<TLight> tlightMap;			//중복을 허용하지 않기 때문에 한 엣지에서 두 레인이 모두 같은 방향으로 가게 될 경우 겹쳐버려서 tlight가 저장되지 않는 문제 극복.
 	private String tlight;
+	private int popapplied;			//priority of policy applied. 적용중인 policy의 priority를 나타낸 것으로 없을 경우 -1이 아니고 maxInt. 됨.
+	private String pNameApplied;		//name of the policy applied. 
 	
 	public CS(String l){
 		location = l;
@@ -25,6 +28,8 @@ public class CS {
 		camera = new HashMap<String, Integer>();
 		tlightMap = new ArrayList<TLight>();
 		tlight = "";
+		popapplied = Integer.MAX_VALUE;
+		pNameApplied = "";
 	}
 	
 	public Boolean hasEdge(String e){
@@ -36,6 +41,22 @@ public class CS {
 			}
 		}
 		return ret;
+	}
+	
+	public String getpName(){
+		return pNameApplied;
+	}
+	
+	public void setpName(String pName){
+		pNameApplied = pName;
+	}
+	
+	public int getPOP(){
+		return popapplied;
+	}
+	
+	public void setPOP(int priority){
+		popapplied = priority;
 	}
 	
 	public void addEdge(String e){
@@ -89,11 +110,11 @@ public class CS {
 	}
 	
 	//randomly assign
-	public void updateAllTrafficLight(SumoTraciConnection conn, String[] signal) throws Exception{
+	public void updateAllTrafficLight(SumoTraciConnection conn) throws Exception{
 		for (TLight t: tlightMap){
-			int rand = new Random().nextInt(signal.length);
+			int rand = new Random().nextInt(trafficLightSignal.length);
 //			tlightMap.put(e.getKey(), signal[rand]);
-			t.setTLight(t.getKey(), signal[rand]);
+			t.setTLight(t.getKey(), trafficLightSignal[rand]);
 		}
 		tlight = "";
 		initTLight();

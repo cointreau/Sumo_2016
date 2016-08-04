@@ -36,7 +36,6 @@ import it.polito.appeal.traci.SumoTraciConnection;
 
 public class MainController {
 
-	static String trafficLightSignal[] = {"y", "r", "g"};
 	static int trafficLightUpdateCycle = 0;			// written in normal policy
 	static SumoTraciConnection conn;
 
@@ -57,29 +56,11 @@ public class MainController {
 		// ####### policy initiation ######
 		ArrayList<Policy> policyList = parsingPolicy(cf.getPolicyDir());
 		HashMap<String, List<String>> monitoringEdges = initPolicies(policyList);			//<Policy Id, edges>
-		ArrayList<String> pidOrderByPriority = orderPidPriority(policyList);			//낮은 priority --> 높은 priority 순으로 정렬된 policy id를 가지고 있는 리스트.
+		ArrayList<String> pidOrderByPriority = orderPidPriority(policyList);			//낮은 priority(나중) --> 높은 priority(우선) 순으로 정렬된 policy id를 가지고 있는 리스트.
 		int vehicleIdx = 0;				// generate하는 차량의 id를 구분하기 위한 숫자.
 
 		HashMap<String, Timeflag> flagTime = new HashMap<String, Timeflag>();			//time flag의 map을 policy 개수만큼 만듬.
 		for (Policy p: policyList) flagTime.put(p.getId(), new Timeflag(p.getId(), p.getPriority()));
-
-		// ######## variable initiation needed for simulation before simulation #########
-		/*int SoSstate = 0;			// 0-- normal state, minus number-- SoS state before control, plus number -- SoS state after control
-		int[] flagedTime = new int[policyList.size()];			// state 가 sos로 바뀐 시점을 감지하여 저장, flag의 인덱스는 policyList의 인덱스 순서와 동일.
-		 */
-		/*		//ambulance를 위한 변수들
-		List<String> ambulanceRoute = null;
-		HashMap<String, List<String>> ambulances = new HashMap<String, List<String>>();
-		 */
-		//vehicle의 수를 i보다 더 늘리기 위한 숫자.
-
-
-		/*		//현재의 priority를 기억한다.. 임의의 priority 숫자(가장 높은 숫자)
-		int priority = Integer.MAX_VALUE;
-		Policy nowPolicy = null;
-
-		 */
-		//		conn.do_job_set(Vehicle.add("", "car", "rush1", 0, 0, 0.0, (byte) 0));
 
 		// #### simulation start ####
 		for (int i=0; i<3600; i++){
@@ -92,7 +73,10 @@ public class MainController {
 				for (Entry<String, CS> e: csList.entrySet()){
 					if (getPassingNodes().contains(e.getKey()))
 						continue;
-					e.getValue().updateAllTrafficLight(conn, trafficLightSignal);
+					
+					//만약 policy의 적용을 받고 있으면 pass.
+					if (e.getValue().getPOP() == Integer.MAX_VALUE)
+						e.getValue().updateAllTrafficLight(conn);
 				}
 			}
 
@@ -113,7 +97,13 @@ public class MainController {
 
 				// do operation if pol's factor is satisfied.
 				if (!factorSatisfied){			// not satisfied.
-
+					Timeflag flag = flagTime.get(pol.getId());			//get the timeflag of now policy
+					if (flag.getState().compareTo("monitor")==0){		//만약 모니터 중이었다면 정상화함.
+						flag.setState("none");
+						flag.setstartTime(-1);
+						flag.setleftTime(-1);
+						System.out.println(pol.getId()+" back to original state");
+					}
 				}
 				else{			// satisfied..
 					Timeflag flag = flagTime.get(pol.getId());			//get the timeflag of now policy
@@ -121,10 +111,10 @@ public class MainController {
 						/* if the state is none.. 
 						 * start monitoring.
 						 */
-						System.out.println("monitoring start");
+						System.out.println(pol.getId()+" monitoring start");
 						flag.setState("monitor");
 						flag.setstartTime(i);
-						flag.setleftTime(pol.getOperation().getSustainTime());
+						flag.setleftTime(pol.getFactor().getTime());
 					}
 					else if (flag.getState().compareTo("monitor")==0 && flag.getLeftTime() != 0){			
 						/* if the state is monitor and still has lefttime, 
@@ -142,17 +132,23 @@ public class MainController {
 						System.out.println("operation start.");
 						csList = doOperation(pol, csList);
 						//flag 수정.
+						flag.setState("applied");
+						flag.setstartTime(i);
+						flag.setleftTime(pol.getOperation().getSustainTime());
 					}
 					else if (flag.getState().compareTo("applied")==0 && flag.getLeftTime() != 0){			
 						/* if the state is applied and still has lefttime,
 						 * keep operation.
 						 */ 
+						System.out.println("under operation");
 						flag.setleftTime(flag.getLeftTime()-1);
 					}
 					else if (flag.getState().compareTo("applied")==0 && flag.getLeftTime() == 0){			
 						/* if the state is applied and lefttime is over,
 						 * return to none state.
 						 */ 
+						System.out.println("operation end.");
+						csList = endOperation(pol, csList);
 						flag.setState("none");
 						flag.setstartTime(-1);
 						flag.setleftTime(-1);
@@ -182,6 +178,28 @@ public class MainController {
 		System.out.println("# Arrived car is " + arrivedCar);
 
 		conn.close();
+	}
+
+	private static HashMap<String, CS> endOperation(Policy pol, HashMap<String, CS> csList) {
+		/*
+		 * list중 pName의 이름이 pol과 동일한 애들을 전부 정상화 시킴.
+		 */
+
+		try{
+			for (Entry<String, CS> cs: csList.entrySet()){
+				//pop의 이름이 동일한 cs들만 정상화를 시켜야함. 그러나 낮은 순위 operation 발동 중에 높은 순위가 끝나면 겹치는 구간의 경우 원래대로 돌아가버리기 때문에 낮은 순위의 operation발동을 한번 더
+				//보는 것이 필요하지 않을까 싶다-
+				if (cs.getValue().getpName().compareTo(pol.getId())==0){
+					cs.getValue().updateAllTrafficLight(conn);
+					cs.getValue().setPOP(Integer.MAX_VALUE);
+					cs.getValue().setpName("");
+				}
+			}
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+
+		return csList;
 	}
 
 	private static HashMap<String, CS> doOperation(Policy pol, HashMap<String, CS> csList) {
@@ -227,7 +245,8 @@ public class MainController {
 							}
 						}
 
-						for (int i=0; i<routeAmbl.indexOf(locationAmbulance); i++){		//지나간 노드의 제거
+						int loop = routeAmbl.indexOf(locationAmbulance);
+						for (int i=0; i<loop; i++){		//지나간 노드의 제거
 							routeAmbl.remove(i);
 						}
 
@@ -244,7 +263,6 @@ public class MainController {
 				// 엣지들도 같이 넣어놓음.
 
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -272,9 +290,11 @@ public class MainController {
 							}
 						}
 
-						for (int i=0; i<routeAmbl.indexOf(locationAmbulance); i++){		//지나간 노드도 제거하고
-							routeAmbl.remove(i);
+						int loop = routeAmbl.indexOf(locationAmbulance);
+						for (int i=0; i<loop; i++){		//지나간 노드도 제거하고
+							routeAmbl.remove(0);
 						}
+
 						List<String> leftovers = new ArrayList<String>();
 						//제거된데서, 딱 n개까지만 남겨놓아야함.
 						for (int i=0; i<=pol.getOperation().getFollowCurrentEdgesNumber(); i++){
@@ -290,13 +310,16 @@ public class MainController {
 						targetCSs.put(node, csList.get(node));
 					}
 				}
+
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 
-		//주어진 location에 operation을 적용한다. 만약 null일 경우 return하게 하며, passing nodes일 경우에는 pass하게 한다.
+
+
+		//주어진 location에 operation을 적용한다. 만약 null일 경우 return하게 하며, passing nodes일 경우에는 pass하게 한다. 
+		//또한 priority를 체크하여 현재 CS의 priority가 낮을 때만 적용하도록 하여야 한다.
 		if (targetCSs.isEmpty())
 			return csList;
 
@@ -305,13 +328,17 @@ public class MainController {
 				if (getPassingNodes().contains(target.getKey()))
 					continue;
 
+				//pop적용 전 해당 CS의 priority 체크
+				if (!(pol.getPriority() < target.getValue().getPOP()))		//낮아야 발동. 높으면 continue;
+					continue;
+
 				// CS 단위의 처리
 				if (pol.getOperation().getLocation_target().compareTo("all")==0){
-					for (Entry<String, CS> cs: csList.entrySet()){
-						for (TLight t: cs.getValue().gettlightMap()){
-							cs.getValue().updateTrafficLight(conn, t.getKey(), pol.getOperation().getLight());
-						}
+					for (TLight t: target.getValue().gettlightMap()){
+						target.getValue().updateTrafficLight(conn, t.getKey(), pol.getOperation().getLight());
 					}
+					target.getValue().setPOP(pol.getPriority());
+					target.getValue().setpName(pol.getId());
 				}
 
 				//edge 단위의 처리
@@ -332,6 +359,8 @@ public class MainController {
 									else if (pol.getOperation().getLight().compareTo("r")==0)	target.getValue().updateTrafficLight(conn, t.getKey(), "g");
 								}
 							}
+							target.getValue().setPOP(pol.getPriority());
+							target.getValue().setpName(pol.getId());
 						}
 					}
 				}
@@ -339,12 +368,12 @@ public class MainController {
 		}catch(Exception e){
 			e.printStackTrace();
 		}
-		
+
 		//csList에 업데이트 해야함.
 		for (Entry<String, CS> target: targetCSs.entrySet()){
 			csList.put(target.getKey(), target.getValue());
 		}
-		
+
 		return csList;
 	}
 
@@ -397,6 +426,8 @@ public class MainController {
 					}
 					// determine if the number of vehicles on these edges is over N.
 					satisfied = switchBySign(pol, number);
+					if (satisfied) 
+						System.out.println("# of car"+number);
 				}
 				else if (pol.getFactor().getVehicle_target().compareToIgnoreCase("ambulance")==0){
 					//case edges ambulance
@@ -419,6 +450,8 @@ public class MainController {
 			e.printStackTrace();
 		}
 
+
+		
 		return satisfied;
 	}
 
@@ -524,10 +557,10 @@ public class MainController {
 				for (int j=0; j<5; j++)
 					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr3", simtime, 0, 0.0, (byte) 0));
 			}
-/*			else if (randNum >= 0 && randNum <500 && ambulancePolicyExist){
+			else if (randNum >= 499 && randNum <500){
 				conn.do_job_set(Vehicle.add("ambulance"+vehicleIdx, "ambulance", "ambul1", simtime, 0, 0.0, (byte) 0));
 				vehicleIdx++;
-			}*/
+			}
 		}catch (Exception e){
 			e.printStackTrace();
 		}
@@ -589,8 +622,9 @@ public class MainController {
 				SumoLinkList sll = (SumoLinkList)conn.do_job_get(Trafficlights.getControlledLinks(cs.getKey()));
 				for (SumoLink link: sll){
 					String linkname = link.from.substring(0, link.from.length()-2) +"@" + link.to.substring(0, link.to.length()-2);
+					String signal[] = {"y", "r", "g"};
 					int rand = new Random().nextInt(3);
-					cs.getValue().addTLight(linkname, trafficLightSignal[rand]);
+					cs.getValue().addTLight(linkname, signal[rand]);
 				}
 				cs.getValue().initTLight();
 			}
