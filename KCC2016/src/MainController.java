@@ -114,7 +114,8 @@ public class MainController {
 						System.out.println(pol.getId()+" monitoring start");
 						flag.setState("monitor");
 						flag.setstartTime(i);
-						flag.setleftTime(pol.getFactor().getTime());
+						flag.setleftTime(pol.getFactor().getTime()-1);
+						if (flag.getLeftTime()==-1)	flag.setleftTime(0);
 					}
 					else if (flag.getState().compareTo("monitor")==0 && flag.getLeftTime() != 0){			
 						/* if the state is monitor and still has lefttime, 
@@ -134,7 +135,8 @@ public class MainController {
 						//flag 수정.
 						flag.setState("applied");
 						flag.setstartTime(i);
-						flag.setleftTime(pol.getOperation().getSustainTime());
+						flag.setleftTime(pol.getOperation().getSustainTime()-1);
+						if (flag.getLeftTime()==-1)	flag.setleftTime(0);
 					}
 					else if (flag.getState().compareTo("applied")==0 && flag.getLeftTime() != 0){			
 						/* if the state is applied and still has lefttime,
@@ -553,11 +555,11 @@ public class MainController {
 				for (int j=0; j<5; j++)
 					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr2", simtime, 0, 0.0, (byte) 0));
 			}
-			else if (randNum >= 450 && randNum <499){
+/*			else if (randNum >= 450 && randNum <499){
 				for (int j=0; j<5; j++)
 					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr3", simtime, 0, 0.0, (byte) 0));
-			}
-			else if (randNum >= 499 && randNum <500){
+			}*/
+			else if (randNum >= 450 && randNum <500){
 				conn.do_job_set(Vehicle.add("ambulance"+vehicleIdx, "ambulance", "ambul1", simtime, 0, 0.0, (byte) 0));
 				vehicleIdx++;
 			}
