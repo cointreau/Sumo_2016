@@ -104,6 +104,17 @@ public class MainController {
 						flag.setleftTime(-1);
 						System.out.println(pol.getId()+" back to original state");
 					}
+					 if (flag.getState().compareTo("applied")==0 && flag.getLeftTime() != 0){			//apply중이었으면 factor의 만족/불만족 여부에 상관치 않으므로 둘다 추가해야함.
+							System.out.println("under operation");
+							flag.setleftTime(flag.getLeftTime()-1);
+						}
+						else if (flag.getState().compareTo("applied")==0 && flag.getLeftTime() == 0){			
+							System.out.println("operation end.");
+							csList = endOperation(pol, csList);
+							flag.setState("none");
+							flag.setstartTime(-1);
+							flag.setleftTime(-1);
+						}
 				}
 				else{			// satisfied..
 					Timeflag flag = flagTime.get(pol.getId());			//get the timeflag of now policy
@@ -555,11 +566,11 @@ public class MainController {
 				for (int j=0; j<5; j++)
 					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr2", simtime, 0, 0.0, (byte) 0));
 			}
-/*			else if (randNum >= 450 && randNum <499){
+			else if (randNum >= 450 && randNum <499){
 				for (int j=0; j<5; j++)
 					conn.do_job_set(Vehicle.add("genr"+vehicleIdx++, "car", "genr3", simtime, 0, 0.0, (byte) 0));
-			}*/
-			else if (randNum >= 450 && randNum <500){
+			}
+			else if (randNum >= 499 && randNum <500){
 				conn.do_job_set(Vehicle.add("ambulance"+vehicleIdx, "ambulance", "ambul1", simtime, 0, 0.0, (byte) 0));
 				vehicleIdx++;
 			}

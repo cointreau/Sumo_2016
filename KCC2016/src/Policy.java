@@ -1,4 +1,6 @@
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -9,6 +11,11 @@ import org.w3c.dom.NodeList;
 
 
 public class Policy {
+	
+	//예약어
+	private final String NV = "NV";
+	private final String AW = "AW";
+	
 	String id;
 	int priority;
 	Factor f;
@@ -189,4 +196,5 @@ public class Policy {
 	public Operation getOperation(){
 		return o;
 	}
+	
 }
