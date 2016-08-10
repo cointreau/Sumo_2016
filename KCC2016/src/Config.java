@@ -8,7 +8,7 @@ public class Config {
 	private String config = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_sim.cfg";
 	private String relEdgesFileDir = "C:/Users/WonKyung/git/KCC2016/DJproject/relatedEdges.txt";
 	//		String trafDirectionFileDir = "C:/Users/WonKyung/git/KCC2016/DJproject/trafficDirection.txt";
-	private String policyDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_policy_v1.2.xml";
+	private String policyDir = "C:/Users/WonKyung/git/KCC2016/DJproject/DJMap_policy_v1.3.xml";
 	private String mapVersion = "1.2";
 	
 	public String getSumoBinDir(){

@@ -31,6 +31,8 @@ import de.tudresden.sumo.cmd.Vehicle;
 import de.tudresden.ws.container.SumoLink;
 import de.tudresden.ws.container.SumoLinkList;
 import de.tudresden.ws.container.SumoStringList;
+import expr.Expr;
+import expr.Parser;
 import it.polito.appeal.traci.SumoTraciConnection;
 
 
@@ -45,7 +47,7 @@ public class MainController {
 		Config cf = new Config();
 		HashMap<String, CS> csList;
 
-		int arrivedCar =0;
+		int arrivedCar=0, departedCar=0;
 		conn = new SumoTraciConnection(cf.getSumoBinDir(), cf.getConfigDir());
 		conn.addOption("step-length", "1");
 		conn.runServer();
@@ -55,7 +57,6 @@ public class MainController {
 
 		// ####### policy initiation ######
 		ArrayList<Policy> policyList = parsingPolicy(cf.getPolicyDir());
-		HashMap<String, List<String>> monitoringEdges = initPolicies(policyList);			//<Policy Id, edges>
 		ArrayList<String> pidOrderByPriority = orderPidPriority(policyList);			//낮은 priority(나중) --> 높은 priority(우선) 순으로 정렬된 policy id를 가지고 있는 리스트.
 		int vehicleIdx = 0;				// generate하는 차량의 id를 구분하기 위한 숫자.
 
@@ -73,7 +74,7 @@ public class MainController {
 				for (Entry<String, CS> e: csList.entrySet()){
 					if (getPassingNodes().contains(e.getKey()))
 						continue;
-					
+
 					//만약 policy의 적용을 받고 있으면 pass.
 					if (e.getValue().getPOP() == Integer.MAX_VALUE)
 						e.getValue().updateAllTrafficLight(conn);
@@ -92,7 +93,7 @@ public class MainController {
 				}
 
 				//checking the pol's factor is satisfied.
-				boolean factorSatisfied = factorCheck(pol, monitoringEdges, csList);			// if factor is satisfied, change to true.
+				boolean factorSatisfied = factorCheck(pol, csList);			// if factor is satisfied, change to true.
 				System.out.println((simtime/1000) + " tick / " + pid + "\t" + factorSatisfied);
 
 				// do operation if pol's factor is satisfied.
@@ -104,17 +105,17 @@ public class MainController {
 						flag.setleftTime(-1);
 						System.out.println(pol.getId()+" back to original state");
 					}
-					 if (flag.getState().compareTo("applied")==0 && flag.getLeftTime() != 0){			//apply중이었으면 factor의 만족/불만족 여부에 상관치 않으므로 둘다 추가해야함.
-							System.out.println("under operation");
-							flag.setleftTime(flag.getLeftTime()-1);
-						}
-						else if (flag.getState().compareTo("applied")==0 && flag.getLeftTime() == 0){			
-							System.out.println("operation end.");
-							csList = endOperation(pol, csList);
-							flag.setState("none");
-							flag.setstartTime(-1);
-							flag.setleftTime(-1);
-						}
+					if (flag.getState().compareTo("applied")==0 && flag.getLeftTime() != 0){			//apply중이었으면 factor의 만족/불만족 여부에 상관치 않으므로 둘다 추가해야함.
+						System.out.println("under operation");
+						flag.setleftTime(flag.getLeftTime()-1);
+					}
+					else if (flag.getState().compareTo("applied")==0 && flag.getLeftTime() == 0){			
+						System.out.println("operation end.");
+						csList = endOperation(pol, csList);
+						flag.setState("none");
+						flag.setstartTime(-1);
+						flag.setleftTime(-1);
+					}
 				}
 				else{			// satisfied..
 					Timeflag flag = flagTime.get(pol.getId());			//get the timeflag of now policy
@@ -186,8 +187,11 @@ public class MainController {
 				conn.do_job_set(Trafficlights.setRedYellowGreenState(e.getKey(), e.getValue().getTLight()));
 			}
 			conn.do_timestep();
+			
+			departedCar += (int) conn.do_job_get(Simulation.getDepartedNumber());
+			arrivedCar += (int) conn.do_job_get(Simulation.getArrivedNumber());
 		}
-
+		System.out.println("# Departed car is " + departedCar);
 		System.out.println("# Arrived car is " + arrivedCar);
 
 		conn.close();
@@ -309,11 +313,18 @@ public class MainController {
 						}
 
 						List<String> leftovers = new ArrayList<String>();
-						//제거된데서, 딱 n개까지만 남겨놓아야함.
-						for (int i=0; i<=pol.getOperation().getFollowCurrentEdgesNumber(); i++){
-							leftovers.add(routeAmbl.get(i));
+						//만약 routeAmbl이 충분히 남지 않았으면 그냥 통째로 넣어둔다
+						if (routeAmbl.size() <= pol.getOperation().getFollowCurrentEdgesNumber()){
+							for (int i=0; i<routeAmbl.size(); i++)
+								leftovers.add(routeAmbl.get(i));
 						}
-
+						else{
+							//제거된데서, 딱 n개까지만 남겨놓아야함.
+							for (int i=0; i<=pol.getOperation().getFollowCurrentEdgesNumber(); i++){
+								leftovers.add(routeAmbl.get(i));
+							}
+						}
+						
 						ambulances.put(vid, getNodesFromRoutes(leftovers, true));
 					}
 				}
@@ -391,56 +402,78 @@ public class MainController {
 	}
 
 	// return true if factor of this policy (named pol) is satisfied.
-	private static boolean factorCheck(Policy pol, HashMap<String, List<String>> monitoringEdges, HashMap<String, CS> csList) {
+	private static boolean factorCheck(Policy pol, HashMap<String, CS> csList) {
 		/* checking the pol's factor is satisfied.
 		 * the case is divided as 4 cases.
 		 * location_target				vehicle_target			description
-		 *     all							all					do operation if the number of all vehicles on all edges is over N.
-		 *     all 							ambulance			do operation if the number of ambulances on all edges is over N.
-		 *     edges						all					do operation if the number of all vehicles on edges targetted is over N.
-		 *     edges						ambulance			do operation if the number of ambulances on edges targetted is over N. 
+		 *     all							all					do operation if the number of all vehicles on all edges.
+		 *     all 							ambulance			do operation if the number of ambulances on all edges
+		 *     edges						all					do operation if the number of all vehicles on edges targetted.
+		 *     edges						ambulance			do operation if the number of ambulances on edges targetted. 
+		 * but, I divide the case as vehicle targets since the actions are same regardless of the location. 
 		 */
 		boolean satisfied = false;
 		try{
-			if (pol.getFactor().getLocation_target().compareToIgnoreCase("all")==0){
-				//since the location is all, just getting vehicles on all edges.
-				List<String> vehicles = (List<String>) conn.do_job_get(Vehicle.getIDList());
-				if (pol.getFactor().getVehicle_target().compareToIgnoreCase("all")==0){
-					//case all all
-					satisfied = switchBySign(pol, vehicles.size());
-				}
-				else if (pol.getFactor().getVehicle_target().compareToIgnoreCase("ambulance")==0){			 
-					//case all ambulance
-					//extract ambulances from vehicles list.
-					ArrayList<String> ambulances = new ArrayList<String>();
-					for (String str: vehicles){
-						if (str.startsWith("ambulance")){
-							ambulances.add(str);
-						}
-					}
+			//			if (pol.getFactor().getLocation_target().compareToIgnoreCase("all")==0){
+			//since the location is all, just getting vehicles on all edges.
+			if (pol.getFactor().getVehicle_target().compareToIgnoreCase("all")==0){
+				//case all all
+				//to extract left, get the edges from policy at first
+				String left=pol.getFactor().getFormula_l();
+				String right = pol.getFactor().getFormula_r();
+				ArrayList<String> edges_l = pol.getFactor().getEdges_l();
+				ArrayList<String> edges_r = pol.getFactor().getEdges_r();
+				Double res_l, res_r;
+				
+				//NULL CHECK
+				if (edges_l == null)
+					res_l = pol.getFactor().getVehicle_number_l();
+				else
+					res_l = calculateExprAllVehicles(pol, left, edges_l, csList);
+				
+				if (edges_r == null)
+					res_r = pol.getFactor().getVehicle_number_r();
+				else
+					res_r = calculateExprAllVehicles(pol, right, edges_r, csList);
 
-					satisfied = switchBySign(pol, ambulances.size());
-				}
+				satisfied = switchBySign(res_l, pol.getFactor().getVehicle_number_sign(), res_r);
+
+				System.out.println(res_l + "\t " + res_r);
 			}
+			else if (pol.getFactor().getVehicle_target().compareToIgnoreCase("ambulance")==0){			 
+				//case all ambulance
+				//extract ambulances from vehicles list.
 
+				String left=pol.getFactor().getFormula_l();
+				String right = pol.getFactor().getFormula_r();
+				ArrayList<String> edges_l = pol.getFactor().getEdges_l();
+				ArrayList<String> edges_r = pol.getFactor().getEdges_r();
+				Double res_l, res_r;
+				
+				//NULL CHECK
+				if (edges_l == null)
+					res_l = pol.getFactor().getVehicle_number_l();
+				else
+					res_l = calculateExprSpeVehicles(pol, left, edges_l, csList, "ambulance");
+				
+				if (edges_r == null)
+					res_r = pol.getFactor().getVehicle_number_r();
+				else
+					res_r = calculateExprSpeVehicles(pol, right, edges_r, csList, "ambulance");
+
+				satisfied = switchBySign(res_l, pol.getFactor().getVehicle_number_sign(), res_r);
+
+			}
+		}
+		/*
 			else if (pol.getFactor().getLocation_target().compareToIgnoreCase("edges")==0){
-				List<String> edges = monitoringEdges.get(pol.getId());
+//				List<String> edges = monitoringEdges.get(pol.getId());
 				if (pol.getFactor().getVehicle_target().compareToIgnoreCase("all")==0){
 					// case edges all
-					// getting the number of vehicles on these specific monitored edges. 
-					int number = 0;
-					for (String str: edges){			// edges에서 하나씩 빼서
-						for (Entry<String, CS> cs: csList.entrySet()){			// CS를 돌며 그 엣지를 가지고 있는게 보이면.. 그 엣지 위에 있는 차의 대수를 가지고옴.
-							if (cs.getValue().getEdgeList().contains(str)){
-								number += cs.getValue().getCamera().get(str);
-								break;
-							}
-						}
-					}
+
 					// determine if the number of vehicles on these edges is over N.
-					satisfied = switchBySign(pol, number);
-					if (satisfied) 
-						System.out.println("# of car"+number);
+					satisfied = switchBySign(pol);
+
 				}
 				else if (pol.getFactor().getVehicle_target().compareToIgnoreCase("ambulance")==0){
 					//case edges ambulance
@@ -456,27 +489,195 @@ public class MainController {
 					}
 
 					// determine if the number of ambulances on these edges is over N.
-					satisfied = switchBySign(pol, number);
+					satisfied = switchBySign(pol);
 				}
 			}
-		} catch (Exception e){
+		}*/ catch (Exception e){
 			e.printStackTrace();
 		}
 
 
-		
+
 		return satisfied;
 	}
 
 
+	private static Double calculateExprSpeVehicles(Policy pol, String side, ArrayList<String> edges, HashMap<String, CS> csList, String name) {
+		Expr expr = null;
+
+		try{
+			List<String> vehicles = (List<String>) conn.do_job_get(Vehicle.getIDList());
+
+			//extract the named vehicles.
+			ArrayList<String> specialVehicles = new ArrayList<String>();
+			for (String str: vehicles){
+				if (str.startsWith(name)){
+					specialVehicles.add(str);
+				}
+			}
+
+			for (String edge: edges){
+				int numOfVehicles=0;
+				String type = pol.getFactor().getTypesOfEdges(edge, "l");
+				if (type.compareTo("NV")==0){
+					if (edge.compareToIgnoreCase("all")==0){			//NV(all)
+						String nvall = String.valueOf(specialVehicles.size());
+						side = side.replace("NV(ALL)", nvall);
+					}
+					else{			//NV(edge)
+						//본 edge에서 specialVehicle의 id를 가지고 있으면 +1 시킨다. 즉, 이 엣지에 specialvehicle이 있으면 +1.
+						for (String vid : specialVehicles){
+							if (((List<String>)Edge.getLastStepVehicleIDs(edge)).contains(vid)){
+								numOfVehicles++;
+							}
+						}
+						String nvedge = String.valueOf(numOfVehicles);
+						side = side.replace("NV("+edge+")", nvedge);
+					}
+				}
+
+				else if (type.compareTo("AW")==0){
+					if (edge.compareToIgnoreCase("all")==0){		//AW(all)
+						Double awall=0.0;
+						for (String vid: specialVehicles)
+							awall += (double) conn.do_job_get(Vehicle.getWaitingTime(vid));
+						side = side.replace("AW(ALL)", Double.toString(awall));
+					}
+					else {		//AW(edge)
+						Double awedge = 0.0;
+						for (String vid : specialVehicles){				//본 edge에서 specialVehicle의 id를 가지고 있으면 waitingtime을 가져온다. 즉, 이 엣지에 specialvehicle이 있으면 AW갖고옴
+							if (((List<String>)Edge.getLastStepVehicleIDs(edge)).contains(vid)){
+								awedge += (double)conn.do_job_get(Vehicle.getWaitingTime(vid));
+							}
+						}
+						side = side.replace("AW("+edge+")", Double.toString(awedge));
+					}
+				}
+
+				else{			//AWNV case
+					if (edge.compareToIgnoreCase("all")==0){		//has AW(all) and NV(all)
+						String nvall = String.valueOf(specialVehicles.size());			//NV(all)
+						side = side.replace("NV(ALL)", nvall);
+
+						Double awall=0.0;				//AW(all)
+						for (String vid: specialVehicles)
+							awall += (double) conn.do_job_get(Vehicle.getWaitingTime(vid));
+						side = side.replace("AW(ALL)", Double.toString(awall));
+					}
+					else {				//has AW(edge) and NV(edge)
+						//NV(edge)
+						//본 edge에서 specialVehicle의 id를 가지고 있으면 +1 시킨다. 즉, 이 엣지에 specialvehicle이 있으면 +1.
+						for (String vid : specialVehicles){
+							if (((List<String>)Edge.getLastStepVehicleIDs(edge)).contains(vid)){
+								numOfVehicles++;
+							}
+						}
+						String nvedge = String.valueOf(numOfVehicles);
+						side = side.replace("NV("+edge+")", nvedge);
+						
+						//AW(edge)
+						//본 edge에서 specialVehicle의 id를 가지고 있으면 waitingtime을 가져온다. 즉, 이 엣지에 specialvehicle이 있으면 AW갖고옴
+						Double awedge = 0.0;
+						for (String vid : specialVehicles){				
+							if (((List<String>)Edge.getLastStepVehicleIDs(edge)).contains(vid)){
+								awedge += (double)conn.do_job_get(Vehicle.getWaitingTime(vid));
+							}
+						}
+						side = side.replace("AW("+edge+")", Double.toString(awedge));
+					}
+				}
+			}
+
+//			System.out.println(side);
+			expr = Parser.parse(side);
+
+		}catch (Exception e1){
+			e1.printStackTrace();
+		}
+
+		return expr.value();
+	}
+
+	private static Double calculateExprAllVehicles(Policy pol, String side, ArrayList<String> edges, HashMap<String, CS> csList) {
+
+		Expr expr=null;
+
+		try{
+			List<String> vehicles = (List<String>) conn.do_job_get(Vehicle.getIDList());
+			for (String edge: edges){
+				String type = pol.getFactor().getTypesOfEdges(edge, "l");
+				if (type.compareTo("NV")==0){
+					if (edge.compareToIgnoreCase("all")==0){			//NV(all)
+						String nvall = String.valueOf(vehicles.size());
+						side = side.replace("NV(ALL)", nvall);
+					}
+					else{			//NV(edge)
+						for (Entry<String, CS> cs: csList.entrySet()){			// CS를 돌며 그 엣지를 가지고 있는게 보이면.. 그 엣지 위에 있는 차의 대수를 가지고옴.
+							if (cs.getValue().getEdgeList().contains(edge)){
+								String nvedge = String.valueOf(cs.getValue().getCamera().get(edge));
+								side = side.replace("NV("+edge+")", nvedge);
+								break;
+							}
+						}
+					}
+				}
+				else if (type.compareTo("AW")==0){
+					if (edge.compareToIgnoreCase("all")==0){		//AW(all)
+						List<String> edgeList = (List<String>)conn.do_job_get(Edge.getIDList());
+						Double awall=0.0;
+						for (String e: edgeList)
+							awall += (double) conn.do_job_get(Edge.getWaitingTime(e));
+						side = side.replace("AW(ALL)", Double.toString(awall));
+					}
+					else {		//AW(edge)
+						Double awedge = (double)conn.do_job_get(Edge.getWaitingTime(edge));
+						side = side.replace("AW("+edge+")", Double.toString(awedge));
+					}
+				}
+				else{			//AWNV case
+					if (edge.compareToIgnoreCase("all")==0){		//has AW(all) and NV(all)
+						String nvall = String.valueOf(vehicles.size());			//NV(all)
+						side = side.replace("NV(ALL)", nvall);
+						
+						List<String> edgeList = (List<String>)conn.do_job_get(Edge.getIDList());			//AW(all)
+						Double awall=0.0;
+						for (String e: edgeList)
+							awall += (double) conn.do_job_get(Edge.getWaitingTime(e));
+						side = side.replace("AW(ALL)", Double.toString(awall));
+					}
+					else {				//has AW(edge) and NV(edge)
+						for (Entry<String, CS> cs: csList.entrySet()){			// CS를 돌며 그 엣지를 가지고 있는게 보이면.. 그 엣지 위에 있는 차의 대수를 가지고옴.
+							if (cs.getValue().getEdgeList().contains(edge)){
+								String nvedge = String.valueOf(cs.getValue().getCamera().get(edge));
+								side = side.replace("NV("+edge+")", nvedge);
+								break;
+							}
+						}
+						Double awedge = (double)conn.do_job_get(Edge.getWaitingTime(edge));
+						side = side.replace("AW("+edge+")", Double.toString(awedge));
+					}
+				}
+			}
+
+			System.out.println(side);
+			expr = Parser.parse(side);
+
+		}catch (Exception e1){
+			e1.printStackTrace();
+		}
+
+		return expr.value();
+	}
+
 	// according to pol's vehicle number sign, determine nVehicles is satisfied.
-	private static boolean switchBySign(Policy pol, int nVehicles) {
+	private static boolean switchBySign(Double res_l, String operator, Double res_r) {
+
 		boolean ret = false;
 
-		switch (pol.getFactor().getVehicle_number_sign()){
+		switch (operator){
 		case "GE": 
 		{
-			if (nVehicles>=pol.getFactor().getVehicle_number())
+			if (res_l>=res_r)
 				ret = true;
 			else
 				ret = false;
@@ -484,7 +685,7 @@ public class MainController {
 		}
 		case "E":
 		{
-			if (nVehicles==pol.getFactor().getVehicle_number())
+			if (res_l==res_r)
 				ret = true;
 			else
 				ret = false;
@@ -492,7 +693,7 @@ public class MainController {
 		}
 		case "G":
 		{
-			if (nVehicles>pol.getFactor().getVehicle_number())
+			if (res_l>res_r)
 				ret = true;
 			else
 				ret = false;
@@ -500,7 +701,7 @@ public class MainController {
 		}
 		case "LE":
 		{
-			if (nVehicles<=pol.getFactor().getVehicle_number())
+			if (res_l<=res_r)
 				ret = true;
 			else
 				ret = false;
@@ -508,7 +709,7 @@ public class MainController {
 		}
 		case "L":
 		{
-			if (nVehicles<pol.getFactor().getVehicle_number())
+			if (res_l<res_r)
 				ret = true;
 			else
 				ret = false;
@@ -516,7 +717,7 @@ public class MainController {
 		}
 		default:
 		{
-			if (nVehicles>=pol.getFactor().getVehicle_number())
+			if (res_l>=res_r)
 				ret = true;
 			else
 				ret = false;
@@ -582,7 +783,7 @@ public class MainController {
 	}
 
 
-	//Policy initiation
+	/*	//Policy initiation
 	private static HashMap<String, List<String>> initPolicies(ArrayList<Policy> policyList) {
 		//policy에 해당하는 edges를 넣는다. 본 list는 policy factor의 location이 edges인 것에 대하여 하나씩 있어야 한다. 
 		HashMap<String, List<String>> monitoringEdges = new HashMap<String, List<String>>();
@@ -603,7 +804,7 @@ public class MainController {
 		}
 
 		return monitoringEdges;
-	}
+	}*/
 
 	//CS(Camera, traffic light) initiation
 	private static HashMap<String, CS> initCSs(Config cf, SumoTraciConnection conn) {
